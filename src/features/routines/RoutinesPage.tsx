@@ -517,8 +517,8 @@ function CreateRoutineDialog({
         <div className="constructor-placeholder">
           <p className="panel-label">Constructor</p>
           <p>
-            Los ejercicios se agregarán en la siguiente slice. Esta rutina queda lista con
-            días activos y revisión inicial.
+            Constructor de ejercicios en preparación. Esta rutina queda lista con días activos y
+            revisión inicial.
           </p>
         </div>
 

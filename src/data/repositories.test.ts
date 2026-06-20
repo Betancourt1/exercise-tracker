@@ -235,6 +235,34 @@ describe("data repositories", () => {
       await db.delete();
     }
   });
+
+  it("restore routine assigns a safe manual order after delete and create", async () => {
+    const db = new WorkoutDatabase(`test-restore-routine-order-${crypto.randomUUID()}`);
+    const firstRoutine = createRoutine();
+    const secondRoutine: Routine = {
+      ...createRoutine(),
+      id: "routine-2",
+      name: "Hipertrofia 3 días",
+      manualOrder: 1,
+    };
+
+    try {
+      await saveRoutine(firstRoutine, db);
+      await softDeleteRoutine("routine-1", "2026-06-21T00:00:00.000Z", db);
+      await saveRoutine(secondRoutine, db);
+      await restoreRoutine("routine-1", "2026-06-22T00:00:00.000Z", db);
+
+      const activeRoutines = await listActiveRoutines(db);
+      const manualOrders = activeRoutines.map((routine) => routine.manualOrder);
+
+      expect(new Set(manualOrders).size).toBe(manualOrders.length);
+      expect(activeRoutines.map((routine) => routine.id)).toEqual(["routine-2", "routine-1"]);
+      expect(activeRoutines.find((routine) => routine.id === "routine-1")?.manualOrder).toBe(2);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
 });
 
 function createExercise(): Exercise {

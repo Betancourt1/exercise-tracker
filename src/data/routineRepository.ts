@@ -93,9 +93,11 @@ export async function restoreRoutine(
         return 0;
       }
 
+      const manualOrder = await getNextAvailableManualOrder(db);
       const restoredRoutine: Routine = {
         ...routine,
         status: routine.previousStatus ?? "paused",
+        manualOrder,
         previousStatus: null,
         deletedAt: null,
         updatedAt: restoredAt,
@@ -235,4 +237,16 @@ async function createRoutineRevisionWindow(
 
   await db.routineRevisions.put(routineRevision);
   return routineRevision.id;
+}
+
+async function getNextAvailableManualOrder(db: WorkoutDatabase): Promise<number> {
+  const routines = await db.routines.toArray();
+  return (
+    routines
+      .filter((routine) => routine.status !== "deleted")
+      .reduce(
+        (highestOrder, routine) => Math.max(highestOrder, routine.manualOrder),
+        0,
+      ) + 1
+  );
 }

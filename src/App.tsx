@@ -287,7 +287,7 @@ function TodayPage({
         <div className="panel-header">
           <div>
             <p className="panel-label">Rutinas para hoy</p>
-            <h2>Sin pendientes</h2>
+            <h2>{activeSummary ? "Rutina activa lista" : "Sin pendientes"}</h2>
           </div>
           <button className="icon-button" type="button" aria-label="Actualizar">
             <RotateCcw size={16} />
@@ -297,7 +297,7 @@ function TodayPage({
           <div className="routine-today-row">
             <strong>{activeSummary.routine.name}</strong>
             <span>{activeSummary.days.length} días activos</span>
-            <span>Entrenamiento pendiente de la siguiente slice</span>
+            <span>Entrenamiento en preparación</span>
           </div>
         ) : (
           <EmptyState
