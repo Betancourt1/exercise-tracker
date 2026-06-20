@@ -13,7 +13,11 @@ import type {
 import {
   EXERCISE_LIBRARY_SEED_META_ID,
   archiveExercise,
+  completeWorkoutSession,
+  createWorkoutDraft,
+  discardWorkoutSession,
   ensureSettings,
+  getLatestInProgressWorkoutDraft,
   getSettings,
   listSeededAvailableExercises,
   listActiveRoutines,
@@ -22,6 +26,7 @@ import {
   listRoutineDays,
   listRoutineExercisesForDay,
   listSetLogsForSession,
+  getWorkoutSession,
   saveExercise,
   saveRoutine,
   saveRoutineDay,
@@ -82,6 +87,179 @@ describe("data repositories", () => {
       const defaultSettings = await ensureSettings(db);
       await saveSettings({ ...defaultSettings, unitSystem: "imperial" }, db);
       expect((await getSettings(db)).unitSystem).toBe("imperial");
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("creates and completes a workout session with set snapshots", async () => {
+    const db = new WorkoutDatabase(`test-complete-workout-${crypto.randomUUID()}`);
+    const session = createWorkoutSession({
+      status: "in_progress",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+    });
+    const setLogs = [
+      createSetLog({
+        completed: true,
+        completedAt: "2026-06-20T00:10:00.000Z",
+        weightKg: 100,
+        reps: 5,
+      }),
+      createSetLog({
+        id: "set-2",
+        setIndex: 2,
+        completed: false,
+        completedAt: null,
+        weightKg: 80,
+        reps: 8,
+      }),
+    ];
+
+    try {
+      await createWorkoutDraft(session, setLogs, db);
+
+      const restoredDraft = await getLatestInProgressWorkoutDraft(db);
+      expect(restoredDraft?.session.id).toBe("session-1");
+      expect(restoredDraft?.setLogs).toHaveLength(2);
+
+      const result = await completeWorkoutSession(
+        "session-1",
+        setLogs,
+        "2026-06-20T01:00:00.000Z",
+        db,
+      );
+
+      expect(result?.session).toMatchObject({
+        status: "completed",
+        endedAt: "2026-06-20T01:00:00.000Z",
+        durationSeconds: 3600,
+        completedSetCount: 1,
+        volumeKg: 500,
+        routineId: "routine-1",
+        routineRevisionId: null,
+        routineNameSnapshot: "Fuerza 4 días",
+        routineDayLabelSnapshot: "Lunes",
+      });
+      expect(result?.setLogs[0]).toMatchObject({
+        exerciseNameSnapshot: "Sentadilla",
+        targetSnapshot: {
+          sortOrder: 1,
+          targetSets: 4,
+        },
+        guideSnapshot: null,
+      });
+      expect(await getLatestInProgressWorkoutDraft(db)).toBeNull();
+      expect((await listSetLogsForSession("session-1", db)).map((setLog) => setLog.id)).toEqual([
+        "set-1",
+        "set-2",
+      ]);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("completed workout metrics ignore incomplete and invalid sets", async () => {
+    const db = new WorkoutDatabase(`test-complete-workout-invalid-${crypto.randomUUID()}`);
+    const session = createWorkoutSession({
+      status: "in_progress",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+    });
+    const setLogs = [
+      createSetLog({ id: "set-valid", completed: true, weightKg: 50, reps: 4 }),
+      createSetLog({
+        id: "set-no-weight",
+        setIndex: 2,
+        completed: true,
+        weightKg: null,
+        reps: 8,
+      }),
+      createSetLog({
+        id: "set-zero-reps",
+        setIndex: 3,
+        completed: true,
+        weightKg: 80,
+        reps: 0,
+      }),
+      createSetLog({
+        id: "set-incomplete",
+        setIndex: 4,
+        completed: false,
+        weightKg: 100,
+        reps: 5,
+      }),
+    ];
+
+    try {
+      await createWorkoutDraft(session, setLogs, db);
+      const result = await completeWorkoutSession(
+        "session-1",
+        setLogs,
+        "2026-06-20T01:00:00.000Z",
+        db,
+      );
+
+      expect(result?.completedSetCount).toBe(1);
+      expect(result?.volumeKg).toBe(200);
+      expect(
+        result?.setLogs.map((setLog) => ({
+          id: setLog.id,
+          completed: setLog.completed,
+          completedAt: setLog.completedAt,
+        })),
+      ).toEqual([
+        {
+          id: "set-valid",
+          completed: true,
+          completedAt: "2026-06-20T00:10:00.000Z",
+        },
+        { id: "set-no-weight", completed: false, completedAt: null },
+        { id: "set-zero-reps", completed: false, completedAt: null },
+        { id: "set-incomplete", completed: false, completedAt: null },
+      ]);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("discards an in-progress workout without completed progress", async () => {
+    const db = new WorkoutDatabase(`test-discard-workout-${crypto.randomUUID()}`);
+    const session = createWorkoutSession({
+      status: "in_progress",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+    });
+    const setLogs = [createSetLog({ completed: true, weightKg: 100, reps: 5 })];
+
+    try {
+      await createWorkoutDraft(session, setLogs, db);
+      const result = await discardWorkoutSession(
+        "session-1",
+        "2026-06-20T00:30:00.000Z",
+        db,
+      );
+
+      expect(result?.session).toMatchObject({
+        status: "discarded",
+        durationSeconds: 1800,
+        completedSetCount: 0,
+        volumeKg: 0,
+      });
+      expect(result?.setLogs.every((setLog) => !setLog.completed)).toBe(true);
+      expect(await getLatestInProgressWorkoutDraft(db)).toBeNull();
+      expect(await getWorkoutSession("session-1", db)).toMatchObject({
+        status: "discarded",
+      });
     } finally {
       db.close();
       await db.delete();
@@ -449,7 +627,7 @@ function createRoutineExercise(): RoutineExercise {
   };
 }
 
-function createWorkoutSession(): WorkoutSession {
+function createWorkoutSession(overrides: Partial<WorkoutSession> = {}): WorkoutSession {
   return {
     id: "session-1",
     status: "completed",
@@ -468,10 +646,11 @@ function createWorkoutSession(): WorkoutSession {
     completedSetCount: 1,
     volumeKg: 500,
     prCount: 0,
+    ...overrides,
   };
 }
 
-function createSetLog(): SetLog {
+function createSetLog(overrides: Partial<SetLog> = {}): SetLog {
   return {
     id: "set-1",
     sessionId: "session-1",
@@ -494,6 +673,7 @@ function createSetLog(): SetLog {
       restSeconds: 120,
     },
     notes: "",
+    ...overrides,
   };
 }
 

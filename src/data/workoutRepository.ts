@@ -1,5 +1,17 @@
 import type { SetLog, WorkoutSession } from "../domain/types";
+import { calculateSessionVolume } from "../domain/analytics";
+import { toIsoUtc } from "../domain/utils";
 import { appDb, type WorkoutDatabase } from "./db";
+
+export type WorkoutDraft = {
+  session: WorkoutSession;
+  setLogs: SetLog[];
+};
+
+export type CompleteWorkoutSessionResult = WorkoutDraft & {
+  completedSetCount: number;
+  volumeKg: number;
+};
 
 export async function getWorkoutSession(
   id: string,
@@ -13,6 +25,162 @@ export async function saveWorkoutSession(
   db: WorkoutDatabase = appDb,
 ): Promise<string> {
   return db.workoutSessions.put(session);
+}
+
+export async function createWorkoutDraft(
+  session: WorkoutSession,
+  setLogs: SetLog[],
+  db: WorkoutDatabase = appDb,
+): Promise<WorkoutDraft> {
+  return db.transaction("rw", db.workoutSessions, db.setLogs, async () => {
+    await db.workoutSessions.put(session);
+    if (setLogs.length > 0) {
+      await db.setLogs.bulkPut(setLogs);
+    }
+
+    return {
+      session,
+      setLogs,
+    };
+  });
+}
+
+export async function getLatestInProgressWorkoutDraft(
+  db: WorkoutDatabase = appDb,
+): Promise<WorkoutDraft | null> {
+  const sessions = await db.workoutSessions.where("status").equals("in_progress").toArray();
+  const session = sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+
+  if (!session) {
+    return null;
+  }
+
+  return {
+    session,
+    setLogs: await listSetLogsForSession(session.id, db),
+  };
+}
+
+export async function saveWorkoutDraft(
+  sessionId: string,
+  setLogs: SetLog[],
+  updatedAt = toIsoUtc(),
+  db: WorkoutDatabase = appDb,
+): Promise<WorkoutDraft | null> {
+  return db.transaction("rw", db.workoutSessions, db.setLogs, async () => {
+    const session = await db.workoutSessions.get(sessionId);
+    if (!session || session.status !== "in_progress") {
+      return null;
+    }
+
+    const updatedSession: WorkoutSession = {
+      ...session,
+      updatedAt,
+    };
+    await db.workoutSessions.put(updatedSession);
+    await db.setLogs.where("sessionId").equals(sessionId).delete();
+    if (setLogs.length > 0) {
+      await db.setLogs.bulkPut(setLogs);
+    }
+
+    return {
+      session: updatedSession,
+      setLogs,
+    };
+  });
+}
+
+export async function completeWorkoutSession(
+  sessionId: string,
+  setLogs: SetLog[],
+  completedAt = toIsoUtc(),
+  db: WorkoutDatabase = appDb,
+): Promise<CompleteWorkoutSessionResult | null> {
+  return db.transaction("rw", db.workoutSessions, db.setLogs, async () => {
+    const session = await db.workoutSessions.get(sessionId);
+    if (!session || session.status !== "in_progress") {
+      return null;
+    }
+
+    const completedSetLogs = setLogs.map((setLog) =>
+      sanitizeCompletedSetLog(setLog, completedAt),
+    );
+    const completedSetCount = completedSetLogs.filter(isProgressSetLog).length;
+    const volumeKg = calculateSessionVolume(completedSetLogs);
+    const endedAt = completedAt;
+    const durationSeconds = calculateDurationSeconds(
+      session.startedAt,
+      endedAt,
+      session.pausedSeconds,
+    );
+    const completedSession: WorkoutSession = {
+      ...session,
+      status: "completed",
+      endedAt,
+      durationSeconds,
+      updatedAt: completedAt,
+      completedSetCount,
+      volumeKg,
+      prCount: 0,
+    };
+
+    await db.workoutSessions.put(completedSession);
+    await db.setLogs.where("sessionId").equals(sessionId).delete();
+    if (completedSetLogs.length > 0) {
+      await db.setLogs.bulkPut(completedSetLogs);
+    }
+
+    return {
+      session: completedSession,
+      setLogs: completedSetLogs,
+      completedSetCount,
+      volumeKg,
+    };
+  });
+}
+
+export async function discardWorkoutSession(
+  sessionId: string,
+  discardedAt = toIsoUtc(),
+  db: WorkoutDatabase = appDb,
+): Promise<WorkoutDraft | null> {
+  return db.transaction("rw", db.workoutSessions, db.setLogs, async () => {
+    const session = await db.workoutSessions.get(sessionId);
+    if (!session || session.status !== "in_progress") {
+      return null;
+    }
+
+    const draftSetLogs = await listSetLogsForSession(sessionId, db);
+    const discardedSetLogs = draftSetLogs.map((setLog) => ({
+      ...setLog,
+      completed: false,
+      completedAt: null,
+    }));
+    const discardedSession: WorkoutSession = {
+      ...session,
+      status: "discarded",
+      endedAt: discardedAt,
+      durationSeconds: calculateDurationSeconds(
+        session.startedAt,
+        discardedAt,
+        session.pausedSeconds,
+      ),
+      updatedAt: discardedAt,
+      completedSetCount: 0,
+      volumeKg: 0,
+      prCount: 0,
+    };
+
+    await db.workoutSessions.put(discardedSession);
+    if (discardedSetLogs.length > 0) {
+      await db.setLogs.bulkPut(discardedSetLogs);
+    }
+
+    return {
+      session: discardedSession,
+      setLogs: discardedSetLogs,
+    };
+  });
 }
 
 export async function listWorkoutSessions(
@@ -76,4 +244,47 @@ export async function deleteWorkoutSession(
     await db.setLogs.where("sessionId").equals(id).delete();
     await db.workoutSessions.delete(id);
   });
+}
+
+function sanitizeCompletedSetLog(setLog: SetLog, completedAt: string): SetLog {
+  if (!isProgressSetLog(setLog)) {
+    return {
+      ...setLog,
+      completed: false,
+      completedAt: null,
+    };
+  }
+
+  return {
+    ...setLog,
+    completed: true,
+    completedAt: setLog.completedAt ?? completedAt,
+  };
+}
+
+function isProgressSetLog(setLog: SetLog): boolean {
+  return (
+    setLog.completed &&
+    typeof setLog.weightKg === "number" &&
+    Number.isFinite(setLog.weightKg) &&
+    setLog.weightKg >= 0 &&
+    typeof setLog.reps === "number" &&
+    Number.isFinite(setLog.reps) &&
+    setLog.reps > 0
+  );
+}
+
+function calculateDurationSeconds(
+  startedAt: string,
+  endedAt: string,
+  pausedSeconds: number,
+): number {
+  const startedMs = Date.parse(startedAt);
+  const endedMs = Date.parse(endedAt);
+  if (!Number.isFinite(startedMs) || !Number.isFinite(endedMs) || endedMs <= startedMs) {
+    return 0;
+  }
+
+  const elapsedSeconds = Math.floor((endedMs - startedMs) / 1000);
+  return Math.max(0, elapsedSeconds - Math.max(0, Math.floor(pausedSeconds)));
 }

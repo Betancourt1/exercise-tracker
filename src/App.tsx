@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Dumbbell,
   Library,
+  Play,
   Plus,
   RotateCcw,
   Search,
@@ -15,8 +16,11 @@ import {
 import { RoutinesPage } from "./features/routines/RoutinesPage";
 import { loadHighestPriorityActiveRoutine } from "./features/routines/routineQueries";
 import type { RoutineSummary } from "./features/routines/types";
+import { WorkoutPage } from "./features/workout/WorkoutPage";
+import type { WorkoutStartRequest } from "./features/workout/types";
+import { getLatestInProgressWorkoutDraft } from "./data";
 
-type PageId = "today" | "routines" | "exercises" | "progress" | "settings";
+type PageId = "today" | "routines" | "exercises" | "progress" | "settings" | "workout";
 
 type NavItem = {
   id: PageId;
@@ -71,22 +75,61 @@ const contextByPage: Record<
     body: "La exportación e importación serán el escape para recuperar rutinas e historial local.",
     bullets: ["Unidades", "Exportar", "Importar"],
   },
+  workout: {
+    title: "Guía durante la sesión",
+    eyebrow: "Entrenar",
+    body: "La sesión activa guarda borradores locales y conserva snapshots de rutina, ejercicio y objetivos.",
+    bullets: ["Set actual", "Descanso", "Técnica compacta"],
+  },
 };
 
 function App() {
   const [activePage, setActivePage] = useState<PageId>("today");
   const [todayRoutine, setTodayRoutine] = useState<RoutineSummary | null>(null);
+  const [workoutStartRequest, setWorkoutStartRequest] =
+    useState<WorkoutStartRequest | null>(null);
+  const [hasInProgressWorkout, setHasInProgressWorkout] = useState(false);
   const activeNavItem = useMemo(
-    () => navItems.find((item) => item.id === activePage) ?? navItems[0],
+    () =>
+      activePage === "workout"
+        ? ({ id: "workout", label: "Entrenar", icon: Dumbbell } satisfies NavItem)
+        : navItems.find((item) => item.id === activePage) ?? navItems[0],
     [activePage],
   );
   const refreshTodayRoutine = useCallback(async () => {
     setTodayRoutine(await loadHighestPriorityActiveRoutine());
   }, []);
+  const refreshInProgressWorkout = useCallback(async () => {
+    setHasInProgressWorkout(Boolean(await getLatestInProgressWorkoutDraft()));
+  }, []);
 
   useEffect(() => {
     void refreshTodayRoutine();
   }, [refreshTodayRoutine]);
+
+  useEffect(() => {
+    void refreshInProgressWorkout();
+  }, [refreshInProgressWorkout]);
+
+  function startWorkout(summary: RoutineSummary) {
+    setWorkoutStartRequest({
+      id: Date.now(),
+      summary,
+    });
+    setActivePage("workout");
+  }
+
+  function continueWorkout() {
+    setWorkoutStartRequest(null);
+    setActivePage("workout");
+  }
+
+  function exitWorkout(page: "today" | "routines") {
+    setWorkoutStartRequest(null);
+    setActivePage(page);
+    void refreshTodayRoutine();
+    void refreshInProgressWorkout();
+  }
 
   return (
     <div className="app-shell">
@@ -97,8 +140,14 @@ function App() {
         <Page
           activePage={activePage}
           todayRoutine={todayRoutine}
+          hasInProgressWorkout={hasInProgressWorkout}
           onNavigate={setActivePage}
           onRoutinesChanged={refreshTodayRoutine}
+          onStartWorkout={startWorkout}
+          onContinueWorkout={continueWorkout}
+          workoutStartRequest={workoutStartRequest}
+          onWorkoutExit={exitWorkout}
+          onWorkoutChanged={refreshInProgressWorkout}
         />
         <MobileContext activePage={activePage} />
       </main>
@@ -192,17 +241,45 @@ function MobileHeader({ activeItem }: { activeItem: NavItem }) {
 function Page({
   activePage,
   todayRoutine,
+  hasInProgressWorkout,
   onNavigate,
   onRoutinesChanged,
+  onStartWorkout,
+  onContinueWorkout,
+  workoutStartRequest,
+  onWorkoutExit,
+  onWorkoutChanged,
 }: {
   activePage: PageId;
   todayRoutine: RoutineSummary | null;
+  hasInProgressWorkout: boolean;
   onNavigate: (page: PageId) => void;
   onRoutinesChanged: () => void;
+  onStartWorkout: (summary: RoutineSummary) => void;
+  onContinueWorkout: () => void;
+  workoutStartRequest: WorkoutStartRequest | null;
+  onWorkoutExit: (page: "today" | "routines") => void;
+  onWorkoutChanged: () => void;
 }) {
   switch (activePage) {
     case "routines":
-      return <RoutinesPage onRoutinesChanged={onRoutinesChanged} />;
+      return (
+        <RoutinesPage
+          onRoutinesChanged={onRoutinesChanged}
+          onStartWorkout={onStartWorkout}
+        />
+      );
+    case "workout":
+      return (
+        <WorkoutPage
+          startRequest={workoutStartRequest}
+          onExit={onWorkoutExit}
+          onWorkoutChanged={() => {
+            onRoutinesChanged();
+            onWorkoutChanged();
+          }}
+        />
+      );
     case "exercises":
       return <ExercisesPage />;
     case "progress":
@@ -211,18 +288,40 @@ function Page({
       return <SettingsPage />;
     case "today":
     default:
-      return <TodayPage todayRoutine={todayRoutine} onNavigate={onNavigate} />;
+      return (
+        <TodayPage
+          todayRoutine={todayRoutine}
+          hasInProgressWorkout={hasInProgressWorkout}
+          onNavigate={onNavigate}
+          onStartWorkout={onStartWorkout}
+          onContinueWorkout={onContinueWorkout}
+        />
+      );
   }
 }
 
 function TodayPage({
   todayRoutine,
+  hasInProgressWorkout,
   onNavigate,
+  onStartWorkout,
+  onContinueWorkout,
 }: {
   todayRoutine: RoutineSummary | null;
+  hasInProgressWorkout: boolean;
   onNavigate: (page: PageId) => void;
+  onStartWorkout: (summary: RoutineSummary) => void;
+  onContinueWorkout: () => void;
 }) {
   const activeSummary = todayRoutine;
+  const canTrain = Boolean(activeSummary && activeSummary.exerciseCount > 0);
+  const primaryLabel = hasInProgressWorkout
+    ? "Continuar"
+    : canTrain
+      ? "Entrenar"
+      : activeSummary
+        ? "Editar rutina"
+        : "Crear rutina";
 
   return (
     <section className="page-section">
@@ -231,12 +330,26 @@ function TodayPage({
         title="Hoy"
         action={
           <button
-            className="primary-button routine"
+            className={`primary-button ${
+              hasInProgressWorkout || canTrain ? "training" : "routine"
+            }`}
             type="button"
-            onClick={() => onNavigate("routines")}
+            onClick={() => {
+              if (hasInProgressWorkout) {
+                onContinueWorkout();
+                return;
+              }
+
+              if (canTrain && activeSummary) {
+                onStartWorkout(activeSummary);
+                return;
+              }
+
+              onNavigate("routines");
+            }}
           >
-            <Plus size={16} />
-            Crear rutina
+            {hasInProgressWorkout || canTrain ? <Play size={16} /> : <Plus size={16} />}
+            {primaryLabel}
           </button>
         }
       />
@@ -256,12 +369,12 @@ function TodayPage({
           </div>
           <div className="button-row">
             <button
-              className="primary-button routine"
+              className={activeSummary ? "secondary-button" : "primary-button routine"}
               type="button"
               onClick={() => onNavigate("routines")}
             >
               <Plus size={16} />
-              {activeSummary ? "Ver rutinas" : "Crear rutina"}
+              {activeSummary ? "Ver rutina" : "Crear rutina"}
             </button>
           </div>
         </article>
@@ -297,7 +410,11 @@ function TodayPage({
           <div className="routine-today-row">
             <strong>{activeSummary.routine.name}</strong>
             <span>{activeSummary.days.length} días activos</span>
-            <span>Entrenamiento en preparación</span>
+            <span>
+              {activeSummary.exerciseCount > 0
+                ? "Lista para entrenar"
+                : "Agrega ejercicios para entrenar"}
+            </span>
           </div>
         ) : (
           <EmptyState

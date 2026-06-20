@@ -5,6 +5,7 @@ import {
   ArrowUp,
   Check,
   Pencil,
+  Play,
   Plus,
   RotateCcw,
   Search,
@@ -26,6 +27,7 @@ import type { RoutineSummary } from "./types";
 
 type RoutinesPageProps = {
   onRoutinesChanged?: () => void;
+  onStartWorkout?: (summary: RoutineSummary) => void;
 };
 
 type RoutineFormState = {
@@ -45,7 +47,7 @@ const initialFormState: RoutineFormState = {
   selectedDayIndexes: [0],
 };
 
-export function RoutinesPage({ onRoutinesChanged }: RoutinesPageProps) {
+export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPageProps) {
   const [summaries, setSummaries] = useState<RoutineSummary[]>([]);
   const [draftOrder, setDraftOrder] = useState<RoutineSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -337,6 +339,7 @@ export function RoutinesPage({ onRoutinesChanged }: RoutinesPageProps) {
                 canMoveDown={index < visibleSummaries.length - 1}
                 onMove={moveRoutine}
                 onEdit={setBuilderTarget}
+                onStartWorkout={onStartWorkout}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -392,6 +395,7 @@ function RoutineRow({
   canMoveDown,
   onMove,
   onEdit,
+  onStartWorkout,
   onDelete,
 }: {
   summary: RoutineSummary;
@@ -401,6 +405,7 @@ function RoutineRow({
   canMoveDown: boolean;
   onMove: (index: number, direction: -1 | 1) => void;
   onEdit: (summary: RoutineSummary) => void;
+  onStartWorkout?: (summary: RoutineSummary) => void;
   onDelete: (summary: RoutineSummary) => void;
 }) {
   const routine = summary.routine;
@@ -442,6 +447,20 @@ function RoutineRow({
           </>
         ) : (
           <>
+            <button
+              className="icon-button training"
+              type="button"
+              title={
+                summary.exerciseCount > 0
+                  ? "Entrenar"
+                  : "Agrega ejercicios antes de entrenar"
+              }
+              aria-label={`Entrenar ${routine.name}`}
+              disabled={!onStartWorkout || summary.exerciseCount === 0}
+              onClick={() => onStartWorkout?.(summary)}
+            >
+              <Play size={16} />
+            </button>
             <button
               className="icon-button"
               type="button"

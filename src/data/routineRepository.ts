@@ -44,6 +44,20 @@ export async function getRoutine(
   return db.routines.get(id);
 }
 
+export async function getActiveRoutineRevision(
+  routineId: string,
+  db: WorkoutDatabase = appDb,
+): Promise<RoutineRevision | undefined> {
+  const routineRevisions = await db.routineRevisions
+    .where("routineId")
+    .equals(routineId)
+    .toArray();
+
+  return routineRevisions
+    .filter((routineRevision) => routineRevision.effectiveTo === null)
+    .sort((a, b) => b.revisionNumber - a.revisionNumber)[0];
+}
+
 export async function saveRoutine(
   routine: Routine,
   db: WorkoutDatabase = appDb,
