@@ -389,6 +389,20 @@ function TodayPage({
                 : "Crea una rutina para ver aquí el siguiente bloque y empezar a entrenar."}
             </p>
           </div>
+          <div className="today-session-meta" aria-label="Resumen de la próxima sesión">
+            <span>
+              <strong>{activeSummary?.days.length ?? 0}</strong>
+              {activeSummary?.days.length === 1 ? "día" : "días"}
+            </span>
+            <span>
+              <strong>{activeSummary?.exerciseCount ?? 0}</strong>
+              ejercicios
+            </span>
+            <span>
+              <strong>{hasInProgressWorkout ? "Sí" : "No"}</strong>
+              sesión abierta
+            </span>
+          </div>
           <div className="button-row">
             <button
               className={activeSummary ? "secondary-button" : "primary-button routine"}
