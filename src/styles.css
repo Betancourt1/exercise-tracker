@@ -546,6 +546,18 @@ input:focus-visible {
   gap: 6px;
 }
 
+.routine-exercise-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.routine-exercise-cell small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
 .priority-summary,
 .routine-today-row {
   display: grid;
@@ -1233,6 +1245,21 @@ input:focus-visible {
   box-shadow: var(--shadow);
 }
 
+.workout-finish-control {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  min-width: min(100%, 360px);
+}
+
+.workout-finish-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: right;
+}
+
 .summary-exercise-list {
   display: grid;
   gap: 8px;
@@ -1643,8 +1670,17 @@ input:focus-visible {
 
   .workout-step-actions,
   .workout-bottom-bar .primary-button,
-  .workout-bottom-bar .secondary-button {
+  .workout-bottom-bar .secondary-button,
+  .workout-finish-control {
     width: 100%;
+  }
+
+  .workout-finish-control {
+    justify-items: stretch;
+  }
+
+  .workout-finish-hint {
+    text-align: left;
   }
 
   .workout-bottom-bar {

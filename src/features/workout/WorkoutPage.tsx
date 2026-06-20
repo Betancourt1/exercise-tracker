@@ -13,10 +13,10 @@ import {
 } from "lucide-react";
 import {
   completeWorkoutSession,
-  createWorkoutDraft,
   discardWorkoutSession,
   getActiveRoutineRevision,
   getLatestInProgressWorkoutDraft,
+  getOrCreateWorkoutDraft,
   listExercises,
   saveWorkoutDraft,
 } from "../../data";
@@ -53,6 +53,7 @@ export function WorkoutPage({
   const [isSaving, setIsSaving] = useState(false);
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
   const [restSecondsRemaining, setRestSecondsRemaining] = useState(0);
   const [isResting, setIsResting] = useState(false);
 
@@ -62,6 +63,7 @@ export function WorkoutPage({
   );
   const currentGroup = exerciseGroups[currentGroupIndex] ?? exerciseGroups[0] ?? null;
   const completedSetCount = draft?.setLogs.filter((setLog) => setLog.completed).length ?? 0;
+  const hasValidCompletedSeries = draft?.setLogs.some(isValidCompletedSeries) ?? false;
   const currentRestTarget = currentGroup?.targetSnapshot?.restSeconds ?? 60;
 
   useEffect(() => {
@@ -118,6 +120,7 @@ export function WorkoutPage({
             setDraft(existingDraft);
             setCurrentGroupIndex(0);
             setEmptyReason("idle");
+            onWorkoutChanged?.();
           }
           return;
         }
@@ -140,7 +143,7 @@ export function WorkoutPage({
           return;
         }
 
-        const persistedDraft = await createWorkoutDraft(
+        const persistedDraft = await getOrCreateWorkoutDraft(
           nextDraft.session,
           nextDraft.setLogs,
         );
@@ -149,6 +152,7 @@ export function WorkoutPage({
           setDraft(persistedDraft);
           setCurrentGroupIndex(0);
           setEmptyReason("idle");
+          onWorkoutChanged?.();
         }
       } catch {
         if (isCurrent) {
@@ -213,6 +217,7 @@ export function WorkoutPage({
             }
           : setLog,
       );
+      setFinishError(null);
       void saveWorkoutDraft(currentDraft.session.id, updatedSetLogs);
 
       return {
@@ -227,6 +232,11 @@ export function WorkoutPage({
       return;
     }
 
+    if (!hasValidCompletedSeries) {
+      setFinishError("Completa al menos una serie con kg y repeticiones válidas.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const result = await completeWorkoutSession(draft.session.id, draft.setLogs);
@@ -237,6 +247,8 @@ export function WorkoutPage({
           setLogs: result.setLogs,
         });
         onWorkoutChanged?.();
+      } else {
+        setFinishError("Completa al menos una serie con kg y repeticiones válidas.");
       }
     } finally {
       setIsSaving(false);
@@ -313,7 +325,7 @@ export function WorkoutPage({
           <strong>{draft.session.routineDayLabelSnapshot ?? "Sesión"}</strong>
         </div>
         <div>
-          <span>Sets marcados</span>
+          <span>Series marcadas</span>
           <strong>{completedSetCount}</strong>
         </div>
       </div>
@@ -332,7 +344,7 @@ export function WorkoutPage({
                 <strong>{group.exerciseName}</strong>
                 <span>
                   {group.setLogs.filter((setLog) => setLog.completed).length}/
-                  {group.setLogs.length} sets
+                  {group.setLogs.length} series
                 </span>
               </button>
             ))}
@@ -346,7 +358,7 @@ export function WorkoutPage({
               <h2>{currentGroup.exerciseName}</h2>
               <p className="muted">
                 Objetivo {currentGroup.targetSnapshot?.targetSets ?? currentGroup.setLogs.length}{" "}
-                sets · {currentGroup.targetSnapshot?.targetRepsMin ?? "-"}-
+                series · {currentGroup.targetSnapshot?.targetRepsMin ?? "-"}-
                 {currentGroup.targetSnapshot?.targetRepsMax ?? "-"} reps · descanso{" "}
                 {currentRestTarget}s
               </p>
@@ -382,7 +394,7 @@ export function WorkoutPage({
               <WorkoutSetRow
                 key={setLog.id}
                 setLog={setLog}
-                label={`Set ${index + 1}`}
+                label={`Serie ${index + 1}`}
                 onUpdate={updateSetLog}
               />
             ))}
@@ -444,10 +456,22 @@ export function WorkoutPage({
           <X size={16} />
           Descartar
         </button>
-        <button className="primary-button training" type="button" onClick={finishWorkout}>
-          <Save size={16} />
-          Finalizar sesión
-        </button>
+        <div className="workout-finish-control">
+          {!hasValidCompletedSeries || finishError ? (
+            <p className="workout-finish-hint">
+              {finishError ?? "Completa al menos una serie válida para finalizar."}
+            </p>
+          ) : null}
+          <button
+            className="primary-button training"
+            type="button"
+            onClick={finishWorkout}
+            disabled={isSaving || !hasValidCompletedSeries}
+          >
+            <Save size={16} />
+            Finalizar sesión
+          </button>
+        </div>
       </div>
 
       {showDiscardConfirm ? (
@@ -594,7 +618,7 @@ function WorkoutSummaryView({
           <strong>{formatWorkoutDuration(summary.session.durationSeconds)}</strong>
         </article>
         <article className="metric-card" data-tone="routine">
-          <p>Sets</p>
+          <p>Series</p>
           <strong>{summary.session.completedSetCount}</strong>
         </article>
         <article className="metric-card" data-tone="progress">
@@ -616,7 +640,7 @@ function WorkoutSummaryView({
             <div className="summary-exercise-row" key={group.key}>
               <strong>{group.exerciseName}</strong>
               <span>
-                {group.setLogs.filter((setLog) => setLog.completed).length} sets completados
+                {group.setLogs.filter((setLog) => setLog.completed).length} series completadas
               </span>
             </div>
           ))}
@@ -693,6 +717,18 @@ function WorkoutHeader({ title }: { title: string }) {
       </div>
       <Dumbbell size={22} className="workout-title-icon" />
     </header>
+  );
+}
+
+function isValidCompletedSeries(setLog: SetLog): boolean {
+  return (
+    setLog.completed &&
+    typeof setLog.weightKg === "number" &&
+    Number.isFinite(setLog.weightKg) &&
+    setLog.weightKg >= 0 &&
+    typeof setLog.reps === "number" &&
+    Number.isFinite(setLog.reps) &&
+    setLog.reps > 0
   );
 }
 

@@ -45,6 +45,39 @@ export async function createWorkoutDraft(
   });
 }
 
+export async function getOrCreateWorkoutDraft(
+  session: WorkoutSession,
+  setLogs: SetLog[],
+  db: WorkoutDatabase = appDb,
+): Promise<WorkoutDraft> {
+  return db.transaction("rw", db.workoutSessions, db.setLogs, async () => {
+    const existingSessions = await db.workoutSessions
+      .where("status")
+      .equals("in_progress")
+      .toArray();
+    const existingSession = existingSessions.find((existingDraft) =>
+      isSameWorkoutDraft(existingDraft, session),
+    );
+
+    if (existingSession) {
+      return {
+        session: existingSession,
+        setLogs: await listSetLogsForSession(existingSession.id, db),
+      };
+    }
+
+    await db.workoutSessions.put(session);
+    if (setLogs.length > 0) {
+      await db.setLogs.bulkPut(setLogs);
+    }
+
+    return {
+      session,
+      setLogs,
+    };
+  });
+}
+
 export async function getLatestInProgressWorkoutDraft(
   db: WorkoutDatabase = appDb,
 ): Promise<WorkoutDraft | null> {
@@ -106,6 +139,10 @@ export async function completeWorkoutSession(
       sanitizeCompletedSetLog(setLog, completedAt),
     );
     const completedSetCount = completedSetLogs.filter(isProgressSetLog).length;
+    if (completedSetCount === 0) {
+      return null;
+    }
+
     const volumeKg = calculateSessionVolume(completedSetLogs);
     const endedAt = completedAt;
     const durationSeconds = calculateDurationSeconds(
@@ -230,9 +267,21 @@ export async function listCompletedSetLogsForExercise(
   db: WorkoutDatabase = appDb,
 ): Promise<SetLog[]> {
   const setLogs = await db.setLogs.where("exerciseId").equals(exerciseId).toArray();
+  const completedSetLogs = setLogs.filter((setLog) => setLog.completed);
+  const sessionIds = [...new Set(completedSetLogs.map((setLog) => setLog.sessionId))];
+  if (sessionIds.length === 0) {
+    return [];
+  }
 
-  return setLogs
-    .filter((setLog) => setLog.completed)
+  const sessions = await db.workoutSessions.bulkGet(sessionIds);
+  const completedSessionIds = new Set(
+    sessions
+      .filter((session): session is WorkoutSession => session?.status === "completed")
+      .map((session) => session.id),
+  );
+
+  return completedSetLogs
+    .filter((setLog) => completedSessionIds.has(setLog.sessionId))
     .sort((a, b) => String(a.completedAt).localeCompare(String(b.completedAt)));
 }
 
@@ -260,6 +309,16 @@ function sanitizeCompletedSetLog(setLog: SetLog, completedAt: string): SetLog {
     completed: true,
     completedAt: setLog.completedAt ?? completedAt,
   };
+}
+
+function isSameWorkoutDraft(currentSession: WorkoutSession, nextSession: WorkoutSession): boolean {
+  return (
+    currentSession.status === "in_progress" &&
+    currentSession.source === "routine" &&
+    currentSession.routineId === nextSession.routineId &&
+    currentSession.routineRevisionId === nextSession.routineRevisionId &&
+    currentSession.routineDayLabelSnapshot === nextSession.routineDayLabelSnapshot
+  );
 }
 
 function isProgressSetLog(setLog: SetLog): boolean {

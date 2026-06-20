@@ -19,9 +19,11 @@ import {
   ensureSettings,
   getLatestInProgressWorkoutDraft,
   getSettings,
+  getOrCreateWorkoutDraft,
   listSeededAvailableExercises,
   listActiveRoutines,
   listAvailableExercises,
+  listCompletedSetLogsForExercise,
   listExercises,
   listRoutineDays,
   listRoutineExercisesForDay,
@@ -163,6 +165,54 @@ describe("data repositories", () => {
     }
   });
 
+  it("gets or creates an in-progress workout draft idempotently for concurrent starts", async () => {
+    const db = new WorkoutDatabase(`test-idempotent-workout-start-${crypto.randomUUID()}`);
+    const firstSession = createWorkoutSession({
+      id: "session-a",
+      status: "in_progress",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+      routineRevisionId: "routine-revision-1",
+    });
+    const secondSession = createWorkoutSession({
+      id: "session-b",
+      status: "in_progress",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+      routineRevisionId: "routine-revision-1",
+    });
+
+    try {
+      const [firstDraft, secondDraft] = await Promise.all([
+        getOrCreateWorkoutDraft(
+          firstSession,
+          [createSetLog({ id: "set-a", sessionId: "session-a" })],
+          db,
+        ),
+        getOrCreateWorkoutDraft(
+          secondSession,
+          [createSetLog({ id: "set-b", sessionId: "session-b" })],
+          db,
+        ),
+      ]);
+      const inProgressSessions = await db.workoutSessions
+        .where("status")
+        .equals("in_progress")
+        .toArray();
+
+      expect(firstDraft.session.id).toBe(secondDraft.session.id);
+      expect(inProgressSessions).toHaveLength(1);
+      expect(await listSetLogsForSession(firstDraft.session.id, db)).toHaveLength(1);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
   it("completed workout metrics ignore incomplete and invalid sets", async () => {
     const db = new WorkoutDatabase(`test-complete-workout-invalid-${crypto.randomUUID()}`);
     const session = createWorkoutSession({
@@ -224,6 +274,93 @@ describe("data repositories", () => {
         { id: "set-zero-reps", completed: false, completedAt: null },
         { id: "set-incomplete", completed: false, completedAt: null },
       ]);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("does not complete a workout when there are no valid completed sets", async () => {
+    const db = new WorkoutDatabase(`test-complete-workout-empty-${crypto.randomUUID()}`);
+    const session = createWorkoutSession({
+      status: "in_progress",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+    });
+    const setLogs = [
+      createSetLog({ completed: false, weightKg: 100, reps: 5 }),
+      createSetLog({
+        id: "set-invalid",
+        setIndex: 2,
+        completed: true,
+        weightKg: null,
+        reps: 5,
+      }),
+    ];
+
+    try {
+      await createWorkoutDraft(session, setLogs, db);
+      const result = await completeWorkoutSession(
+        "session-1",
+        setLogs,
+        "2026-06-20T01:00:00.000Z",
+        db,
+      );
+
+      expect(result).toBeNull();
+      expect(await getWorkoutSession("session-1", db)).toMatchObject({
+        status: "in_progress",
+        completedSetCount: 0,
+        volumeKg: 0,
+      });
+      expect(await getLatestInProgressWorkoutDraft(db)).toMatchObject({
+        session: expect.objectContaining({ id: "session-1" }),
+      });
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("lists completed set logs only when the parent session is completed", async () => {
+    const db = new WorkoutDatabase(`test-completed-set-parent-session-${crypto.randomUUID()}`);
+    const completedSession = createWorkoutSession({
+      id: "completed-session",
+      status: "completed",
+    });
+    const inProgressSession = createWorkoutSession({
+      id: "draft-session",
+      status: "in_progress",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+    });
+
+    try {
+      await saveWorkoutSession(completedSession, db);
+      await saveWorkoutSession(inProgressSession, db);
+      await saveSetLog(
+        createSetLog({
+          id: "completed-set",
+          sessionId: "completed-session",
+          completed: true,
+        }),
+        db,
+      );
+      await saveSetLog(
+        createSetLog({
+          id: "draft-set",
+          sessionId: "draft-session",
+          completed: true,
+        }),
+        db,
+      );
+
+      expect((await listCompletedSetLogsForExercise("exercise-1", db)).map((setLog) => setLog.id))
+        .toEqual(["completed-set"]);
     } finally {
       db.close();
       await db.delete();

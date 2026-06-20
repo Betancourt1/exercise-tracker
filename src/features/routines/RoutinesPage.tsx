@@ -422,7 +422,12 @@ function RoutineRow({
       </div>
       <span>{routine.goal || "General"}</span>
       <span>{dayCopy}</span>
-      <span>{exerciseCopy}</span>
+      <span className="routine-exercise-cell">
+        {exerciseCopy}
+        {summary.exerciseCount === 0 ? (
+          <small>Agrega ejercicios para entrenar.</small>
+        ) : null}
+      </span>
       <div className="routine-actions">
         {isOrderMode ? (
           <>
