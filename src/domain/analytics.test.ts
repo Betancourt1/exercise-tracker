@@ -83,5 +83,12 @@ describe("analytics helpers", () => {
     });
     expect(calculateAdherence(0, 0)).toBeNull();
     expect(calculateAdherence(1, Number.NaN)).toBeNull();
+    expect(calculateAdherence(Number.NaN, 4)).toBeNull();
+    expect(calculateAdherence(Number.POSITIVE_INFINITY, 4)).toBeNull();
+    expect(calculateAdherence(-2, 4)).toEqual({
+      planned: 4,
+      completed: 0,
+      percentage: 0,
+    });
   });
 });

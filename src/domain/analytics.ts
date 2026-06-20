@@ -99,7 +99,11 @@ export function calculateAdherence(
   completedPlannedSessions: number,
   plannedSessions: number,
 ): AdherenceResult | null {
-  if (!Number.isFinite(plannedSessions) || plannedSessions <= 0) {
+  if (
+    !Number.isFinite(plannedSessions) ||
+    !Number.isFinite(completedPlannedSessions) ||
+    plannedSessions <= 0
+  ) {
     return null;
   }
 

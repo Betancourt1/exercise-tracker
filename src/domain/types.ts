@@ -81,7 +81,12 @@ export type ExerciseGuideSnapshot = Pick<Exercise, "id" | "name" | "guide">;
 
 export type RoutineExerciseTargetSnapshot = Pick<
   RoutineExercise,
-  "targetSets" | "targetRepsMin" | "targetRepsMax" | "targetRir" | "restSeconds"
+  | "sortOrder"
+  | "targetSets"
+  | "targetRepsMin"
+  | "targetRepsMax"
+  | "targetRir"
+  | "restSeconds"
 >;
 
 export type WorkoutSession = {

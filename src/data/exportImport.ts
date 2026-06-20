@@ -11,7 +11,7 @@ import type {
 } from "../domain/types";
 import { toIsoUtc } from "../domain/utils";
 import { appDb, type WorkoutDatabase } from "./db";
-import { CORE_STORE_NAMES } from "./storeNames";
+import { validateExportData } from "./importValidation";
 
 export const EXPORT_FORMAT = "rutina-ejercicio.export";
 export const EXPORT_SCHEMA_VERSION = 1;
@@ -44,6 +44,11 @@ export type ImportValidationResult =
       ok: false;
       error: string;
     };
+
+export type SafeReplaceResult = {
+  backup: DatabaseExport;
+  imported: DatabaseExport;
+};
 
 export function createEmptyExportData(): DatabaseExportData {
   return {
@@ -122,17 +127,20 @@ export function validateImportPayload(payload: unknown): ImportValidationResult 
     return { ok: false, error: "El respaldo no incluye fecha de exportación." };
   }
 
-  if (!isRecord(payload.data)) {
-    return { ok: false, error: "El respaldo no incluye datos importables." };
+  const dataValidation = validateExportData(payload.data);
+  if (!dataValidation.ok) {
+    return dataValidation;
   }
 
-  for (const storeName of CORE_STORE_NAMES) {
-    if (!Array.isArray(payload.data[storeName])) {
-      return { ok: false, error: `El store ${storeName} no es válido.` };
-    }
-  }
-
-  return { ok: true, value: payload as DatabaseExport };
+  return {
+    ok: true,
+    value: {
+      format: EXPORT_FORMAT,
+      schemaVersion: EXPORT_SCHEMA_VERSION,
+      exportedAt: payload.exportedAt,
+      data: dataValidation.value,
+    },
+  };
 }
 
 export function parseImportJson(input: string): ImportValidationResult {
@@ -191,6 +199,25 @@ export async function replaceDatabaseFromExport(
   );
 
   return validation.value;
+}
+
+export async function replaceDatabaseFromExportWithBackup(
+  input: string | DatabaseExport,
+  db: WorkoutDatabase = appDb,
+): Promise<SafeReplaceResult> {
+  const validation =
+    typeof input === "string" ? parseImportJson(input) : validateImportPayload(input);
+  if (!validation.ok) {
+    throw new Error(validation.error);
+  }
+
+  const backup = await exportDatabaseJson(db);
+  await replaceDatabaseFromExport(validation.value, db);
+
+  return {
+    backup,
+    imported: validation.value,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

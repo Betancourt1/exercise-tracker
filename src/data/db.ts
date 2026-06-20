@@ -40,7 +40,7 @@ export class WorkoutDatabase extends Dexie {
       workoutSessions:
         "&id, status, source, routineId, routineRevisionId, startedAt, endedAt, updatedAt",
       setLogs:
-        "&id, sessionId, exerciseId, routineExerciseId, completed, completedAt, [exerciseId+completedAt]",
+        "&id, sessionId, exerciseId, routineExerciseId, completed, completedAt, [sessionId+setIndex], [exerciseId+completedAt]",
       settings: "&id",
     });
   }
