@@ -6,7 +6,6 @@ import {
   CalendarDays,
   Dumbbell,
   Library,
-  Play,
   Plus,
   RotateCcw,
   Search,
@@ -43,31 +42,31 @@ const contextByPage: Record<
   today: {
     title: "Siguiente entrenamiento",
     eyebrow: "Contexto",
-    body: "Cuando exista una rutina activa, aqui aparecera el bloque recomendado para empezar la sesion.",
-    bullets: ["Rutina prioritaria", "Ultima sesion", "Recordatorio tecnico"],
+    body: "Cuando exista una rutina activa, aquí aparecerá el bloque recomendado para empezar la sesión.",
+    bullets: ["Rutina prioritaria", "Última sesión", "Recordatorio técnico"],
   },
   routines: {
-    title: "Guia de constructor",
+    title: "Guía de constructor",
     eyebrow: "Rutinas",
-    body: "Al agregar ejercicios, este panel mostrara tecnica breve, errores comunes y descansos sugeridos.",
-    bullets: ["Nombre y objetivo", "Dias activos", "Ejercicios por bloque"],
+    body: "Al agregar ejercicios, este panel mostrará técnica breve, errores comunes y descansos sugeridos.",
+    bullets: ["Nombre y objetivo", "Días activos", "Ejercicios por bloque"],
   },
   exercises: {
-    title: "Guia de ejercicio",
+    title: "Guía de ejercicio",
     eyebrow: "Biblioteca",
-    body: "Selecciona un movimiento para ver indicaciones compactas sin salir del flujo de eleccion.",
-    bullets: ["Tecnica", "Musculos principales", "Errores comunes"],
+    body: "Selecciona un movimiento para ver indicaciones compactas sin salir del flujo de elección.",
+    bullets: ["Técnica", "Músculos principales", "Errores comunes"],
   },
   progress: {
     title: "Lectura de progreso",
-    eyebrow: "Analiticas",
-    body: "Las metricas se calcularan desde sesiones guardadas y mostraran formulas simples.",
+    eyebrow: "Analíticas",
+    body: "Las métricas se calcularán desde sesiones guardadas y mostrarán fórmulas simples.",
     bullets: ["Volumen", "Adherencia", "PRs y tendencia"],
   },
   settings: {
     title: "Datos locales",
     eyebrow: "Respaldo",
-    body: "La exportacion e importacion seran el escape para recuperar rutinas e historial local.",
+    body: "La exportación e importación serán el escape para recuperar rutinas e historial local.",
     bullets: ["Unidades", "Exportar", "Importar"],
   },
 };
@@ -90,7 +89,6 @@ function App() {
       </main>
 
       <ContextPanel activePage={activePage} />
-      <MobileTrainAction onClick={() => setActivePage("today")} />
       <MobileNav activePage={activePage} onNavigate={setActivePage} />
     </div>
   );
@@ -104,7 +102,7 @@ function DesktopSidebar({
   onNavigate: (page: PageId) => void;
 }) {
   return (
-    <aside className="sidebar" aria-label="Navegacion principal">
+    <aside className="sidebar" aria-label="Navegación principal">
       <div className="brand">
         <span className="brand-mark" aria-hidden="true">
           <Dumbbell size={17} strokeWidth={2.4} />
@@ -219,23 +217,20 @@ function TodayPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
       <div className="today-grid">
         <article className="panel next-session">
           <div>
-            <p className="panel-label">Proxima sesion</p>
+            <p className="panel-label">Próxima sesión</p>
             <h2>No hay rutina activa</h2>
             <p className="muted">
-              Crea una rutina para ver aqui el siguiente bloque y empezar a entrenar.
+              Crea una rutina para ver aquí el siguiente bloque y empezar a entrenar.
             </p>
           </div>
           <div className="button-row">
             <button
-              className="primary-button training"
+              className="primary-button routine"
               type="button"
-              aria-disabled="true"
+              onClick={() => onNavigate("routines")}
             >
-              <Play size={16} />
-              Entrenar
-            </button>
-            <button className="secondary-button" type="button">
-              Ver historial
+              <Plus size={16} />
+              Crear rutina
             </button>
           </div>
         </article>
@@ -244,7 +239,7 @@ function TodayPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
           <p className="panel-label">Prioridad</p>
           <EmptyRows
             rows={3}
-            labels={["Rutina prioritaria", "Ultima sesion", "Proximo dia"]}
+            labels={["Rutina prioritaria", "Última sesión", "Próximo día"]}
           />
         </article>
       </div>
@@ -261,7 +256,7 @@ function TodayPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
         </div>
         <EmptyState
           title="No hay sesiones planificadas"
-          body="Las rutinas creadas apareceran aqui segun su orden y proxima sesion."
+          body="Las rutinas creadas aparecerán aquí según su orden y próxima sesión."
         />
       </article>
     </section>
@@ -298,12 +293,12 @@ function RoutinesPage() {
           <div className="table-head">
             <span>Rutina</span>
             <span>Objetivo</span>
-            <span>Dias</span>
-            <span>Ultima sesion</span>
+            <span>Días</span>
+            <span>Última sesión</span>
             <span>Estado</span>
           </div>
           <EmptyState
-            title="Aun no tienes rutinas"
+            title="Aún no tienes rutinas"
             body="Crea la primera rutina para activar el constructor y ordenar tus bloques."
           />
         </div>
@@ -337,14 +332,14 @@ function ExercisesPage() {
           </div>
           <EmptyRows
             rows={4}
-            labels={["Nombre", "Equipo", "Musculos", "Tags"]}
+            labels={["Nombre", "Equipo", "Músculos", "Etiquetas"]}
           />
         </article>
         <article className="panel guide-card">
-          <p className="panel-label">Guia</p>
+          <p className="panel-label">Guía</p>
           <h2>Elige un ejercicio</h2>
           <p className="muted">
-            Aqui viviran las indicaciones de tecnica, errores comunes y recordatorios
+            Aquí vivirán las indicaciones de técnica, errores comunes y recordatorios
             breves.
           </p>
           <GuideList />
@@ -357,7 +352,7 @@ function ExercisesPage() {
 function ProgressPage() {
   return (
     <section className="page-section">
-      <PageTitle kicker="Progreso" title="Analiticas" />
+      <PageTitle kicker="Progreso" title="Analíticas" />
 
       <div className="metric-grid">
         <MetricCard label="Sesiones" value="0" tone="training" />
@@ -370,10 +365,10 @@ function ProgressPage() {
           <div className="panel-header">
             <div>
               <p className="panel-label">Volumen semanal</p>
-              <h2>Sin datos todavia</h2>
+              <h2>Sin datos todavía</h2>
             </div>
           </div>
-          <div className="chart-placeholder" aria-label="Grafica vacia">
+          <div className="chart-placeholder" aria-label="Gráfica vacía">
             <span />
             <span />
             <span />
@@ -385,7 +380,7 @@ function ProgressPage() {
           <p className="panel-label">Sesiones recientes</p>
           <EmptyState
             title="No hay historial"
-            body="Las sesiones guardadas alimentaran volumen, PRs y tendencia por ejercicio."
+            body="Las sesiones guardadas alimentarán volumen, PRs y tendencia por ejercicio."
           />
         </article>
       </div>
@@ -402,7 +397,7 @@ function SettingsPage() {
         <SettingsRow title="Unidades" detail="kg por defecto" />
         <SettingsRow title="Exportar datos" detail="Rutinas e historial local" />
         <SettingsRow title="Importar respaldo" detail="Recuperar datos guardados" />
-        <SettingsRow title="Acciones destructivas" detail="Confirmacion obligatoria" danger />
+        <SettingsRow title="Acciones destructivas" detail="Confirmación obligatoria" danger />
       </article>
     </section>
   );
@@ -440,7 +435,7 @@ function ContextPanel({ activePage }: { activePage: PageId }) {
 
       <div className="context-note">
         <span className="status-dot" />
-        <p>El historial se conservara aunque una rutina cambie o se elimine.</p>
+        <p>El historial se conservará aunque una rutina cambie o se elimine.</p>
       </div>
     </aside>
   );
@@ -466,7 +461,7 @@ function MobileNav({
   onNavigate: (page: PageId) => void;
 }) {
   return (
-    <nav className="mobile-nav" aria-label="Navegacion principal">
+    <nav className="mobile-nav" aria-label="Navegación principal">
       {navItems.map((item) => {
         const Icon = item.icon;
 
@@ -484,15 +479,6 @@ function MobileNav({
         );
       })}
     </nav>
-  );
-}
-
-function MobileTrainAction({ onClick }: { onClick: () => void }) {
-  return (
-    <button className="mobile-train-action" type="button" onClick={onClick}>
-      <Play size={17} />
-      Entrenar
-    </button>
   );
 }
 
@@ -556,7 +542,7 @@ function EmptyState({ title, body }: { title: string; body: string }) {
 }
 
 function GuideList({ items }: { items?: string[] }) {
-  const guideItems = items ?? ["Tecnica compacta", "Errores comunes", "Recordatorios"];
+  const guideItems = items ?? ["Técnica compacta", "Errores comunes", "Recordatorios"];
 
   return (
     <ul className="guide-list">
