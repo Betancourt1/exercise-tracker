@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  Dumbbell,
   Pencil,
   Play,
   Plus,
@@ -14,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  listSeededAvailableExercises,
   restoreRoutine,
   saveRoutineGraph,
   softDeleteRoutine,
@@ -23,6 +25,11 @@ import type { RoutineStatus } from "../../domain";
 import { RoutineBuilderDialog } from "./RoutineBuilderDialog";
 import { buildRoutineGraph, ROUTINE_DAY_OPTIONS } from "./routineBuilders";
 import { loadRoutineSummaries } from "./routineQueries";
+import {
+  ROUTINE_PRESETS,
+  buildRoutineGraphFromPreset,
+  type RoutinePreset,
+} from "./routinePresets";
 import type { RoutineSummary } from "./types";
 
 type RoutinesPageProps = {
@@ -149,6 +156,24 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
       onRoutinesChanged?.();
     } catch {
       setFormError("No se pudo guardar la rutina.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleCreateFromPreset(preset: RoutinePreset) {
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const exercises = await listSeededAvailableExercises();
+      const routineGraph = buildRoutineGraphFromPreset(preset, exercises, nextManualOrder);
+
+      await saveRoutineGraph(routineGraph);
+      await refreshRoutines();
+      onRoutinesChanged?.();
+    } catch {
+      setError("No se pudo crear la rutina desde la plantilla.");
     } finally {
       setIsSaving(false);
     }
@@ -296,6 +321,14 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
 
       {error ? <p className="form-error">{error}</p> : null}
 
+      {!isOrderMode ? (
+        <PresetShelf
+          presets={ROUTINE_PRESETS}
+          isSaving={isSaving}
+          onCreate={handleCreateFromPreset}
+        />
+      ) : null}
+
       <article className="panel routines-panel">
         <div className="routine-table-head">
           <span>Rutina</span>
@@ -384,6 +417,62 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
         </div>
       ) : null}
     </section>
+  );
+}
+
+function PresetShelf({
+  presets,
+  isSaving,
+  onCreate,
+}: {
+  presets: RoutinePreset[];
+  isSaving: boolean;
+  onCreate: (preset: RoutinePreset) => void;
+}) {
+  return (
+    <article className="panel routine-presets-panel" aria-labelledby="routine-presets-title">
+      <div className="preset-shelf-header">
+        <div>
+          <p className="panel-label">Plantillas</p>
+          <h2 id="routine-presets-title">Rutinas de muestra</h2>
+        </div>
+        <Dumbbell size={18} />
+      </div>
+      <div className="preset-grid">
+        {presets.map((preset) => (
+          <div className="preset-card" key={preset.id}>
+            <div>
+              <strong>{preset.name}</strong>
+              <span>{preset.summary}</span>
+            </div>
+            <dl>
+              <div>
+                <dt>Días</dt>
+                <dd>{preset.daysPerWeek}</dd>
+              </div>
+              <div>
+                <dt>Duración</dt>
+                <dd>{preset.duration}</dd>
+              </div>
+              <div>
+                <dt>Equipo</dt>
+                <dd>{preset.equipment}</dd>
+              </div>
+            </dl>
+            <p>{preset.progression}</p>
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={isSaving}
+              onClick={() => onCreate(preset)}
+            >
+              <Plus size={16} />
+              Usar plantilla
+            </button>
+          </div>
+        ))}
+      </div>
+    </article>
   );
 }
 

@@ -82,6 +82,372 @@ const seedExerciseInputs: SeedExerciseInput[] = [
       commonMistakes: ["Inclinarse hacia atrás.", "Perder tensión del abdomen."],
     },
   },
+  {
+    name: "Sentadilla con peso corporal",
+    primaryMuscles: ["cuádriceps", "glúteos"],
+    secondaryMuscles: ["core"],
+    equipment: ["peso corporal"],
+    tags: ["sentadilla", "pierna", "principiante", "sin máquinas"],
+    guide: {
+      setup: ["Pies al ancho de hombros.", "Mantén el torso estable."],
+      technique: ["Baja con control hasta un rango cómodo.", "Sube empujando el piso."],
+      commonMistakes: ["Levantar los talones.", "Colapsar rodillas hacia adentro."],
+    },
+  },
+  {
+    name: "Sentadilla goblet",
+    primaryMuscles: ["cuádriceps", "glúteos"],
+    secondaryMuscles: ["core", "espalda alta"],
+    equipment: ["mancuerna", "kettlebell"],
+    tags: ["sentadilla", "pierna", "principiante", "compuesto"],
+    guide: {
+      setup: ["Sostén la carga frente al pecho.", "Pies al ancho de hombros."],
+      technique: ["Baja con control manteniendo el pecho alto.", "Sube empujando el piso."],
+      commonMistakes: ["Redondear la espalda.", "Dejar que los talones se levanten."],
+    },
+  },
+  {
+    name: "Step-up",
+    primaryMuscles: ["cuádriceps", "glúteos"],
+    secondaryMuscles: ["isquiotibiales", "core"],
+    equipment: ["banco", "caja", "mancuernas"],
+    tags: ["unilateral", "pierna", "funcional"],
+    guide: {
+      setup: ["Coloca un pie completo sobre el banco.", "Mantén el torso estable."],
+      technique: ["Sube empujando con la pierna de arriba.", "Baja lento sin caer."],
+      commonMistakes: [
+        "Impulsarse demasiado con la pierna de abajo.",
+        "Perder alineación de rodilla.",
+      ],
+    },
+  },
+  {
+    name: "Prensa de pierna",
+    primaryMuscles: ["cuádriceps", "glúteos"],
+    secondaryMuscles: ["isquiotibiales"],
+    equipment: ["máquina"],
+    tags: ["pierna", "máquina", "hipertrofia"],
+    guide: {
+      setup: ["Apoya la espalda completa en el respaldo.", "Coloca pies firmes en la plataforma."],
+      technique: [
+        "Baja con rango controlado.",
+        "Empuja sin bloquear agresivamente las rodillas.",
+      ],
+      commonMistakes: ["Bajar la carga perdiendo la pelvis.", "Usar un rango demasiado corto."],
+    },
+  },
+  {
+    name: "Curl femoral en máquina",
+    primaryMuscles: ["isquiotibiales"],
+    secondaryMuscles: ["pantorrillas"],
+    equipment: ["máquina"],
+    tags: ["posterior", "máquina", "aislamiento"],
+    guide: {
+      setup: [
+        "Ajusta el rodillo cerca de los tobillos.",
+        "Alinea la rodilla con el eje de la máquina.",
+      ],
+      technique: ["Flexiona rodillas con control.", "Regresa lento sin soltar la tensión."],
+      commonMistakes: ["Levantar la cadera.", "Usar impulso al final del movimiento."],
+    },
+  },
+  {
+    name: "Extensión de piernas",
+    primaryMuscles: ["cuádriceps"],
+    secondaryMuscles: [],
+    equipment: ["máquina"],
+    tags: ["pierna", "máquina", "aislamiento"],
+    guide: {
+      setup: ["Ajusta el respaldo y el rodillo sobre los tobillos.", "Siéntate con la espalda apoyada."],
+      technique: ["Extiende rodillas con control.", "Pausa breve arriba sin perder postura."],
+      commonMistakes: ["Balancear el cuerpo.", "Bajar la carga demasiado rápido."],
+    },
+  },
+  {
+    name: "Hip thrust",
+    primaryMuscles: ["glúteos"],
+    secondaryMuscles: ["isquiotibiales", "core"],
+    equipment: ["barra", "banca", "mancuerna"],
+    tags: ["glúteos", "bisagra", "posterior"],
+    guide: {
+      setup: ["Apoya la espalda alta en la banca.", "Coloca pies firmes cerca de la cadera."],
+      technique: [
+        "Sube la cadera hasta alinear torso y muslos.",
+        "Controla la bajada manteniendo costillas abajo.",
+      ],
+      commonMistakes: ["Hiperextender la espalda baja.", "Empujar desde las puntas de los pies."],
+    },
+  },
+  {
+    name: "Puente de glúteos",
+    primaryMuscles: ["glúteos"],
+    secondaryMuscles: ["isquiotibiales", "core"],
+    equipment: ["peso corporal", "mancuerna"],
+    tags: ["glúteos", "principiante", "posterior"],
+    guide: {
+      setup: ["Acuéstate con rodillas flexionadas.", "Pies firmes al ancho de cadera."],
+      technique: ["Eleva la cadera apretando glúteos.", "Baja lento sin perder control."],
+      commonMistakes: ["Arquear la espalda baja.", "Colocar los pies demasiado lejos."],
+    },
+  },
+  {
+    name: "Elevación de pantorrillas",
+    primaryMuscles: ["pantorrillas"],
+    secondaryMuscles: [],
+    equipment: ["peso corporal", "mancuernas", "máquina"],
+    tags: ["pierna", "aislamiento"],
+    guide: {
+      setup: ["Apoya la parte frontal del pie con estabilidad.", "Mantén rodillas controladas."],
+      technique: ["Sube los talones con pausa arriba.", "Baja hasta sentir estiramiento cómodo."],
+      commonMistakes: ["Rebotar rápido.", "Inclinar el cuerpo para hacer trampa."],
+    },
+  },
+  {
+    name: "Flexiones",
+    primaryMuscles: ["pecho"],
+    secondaryMuscles: ["tríceps", "hombro anterior", "core"],
+    equipment: ["peso corporal"],
+    tags: ["empuje", "tren superior", "sin máquinas"],
+    guide: {
+      setup: ["Manos bajo hombros o ligeramente más abiertas.", "Cuerpo en línea recta."],
+      technique: [
+        "Baja con codos controlados.",
+        "Empuja el piso sin perder tensión del abdomen.",
+      ],
+      commonMistakes: ["Hundir la cadera.", "Abrir demasiado los codos."],
+    },
+  },
+  {
+    name: "Press inclinado con mancuernas",
+    primaryMuscles: ["pecho"],
+    secondaryMuscles: ["hombro anterior", "tríceps"],
+    equipment: ["mancuernas", "banca"],
+    tags: ["empuje", "tren superior", "hipertrofia"],
+    guide: {
+      setup: ["Inclina la banca moderadamente.", "Empieza con mancuernas sobre el pecho."],
+      technique: [
+        "Baja con control hacia los lados del pecho.",
+        "Empuja manteniendo muñecas firmes.",
+      ],
+      commonMistakes: ["Chocar las mancuernas arriba.", "Arquear demasiado la espalda."],
+    },
+  },
+  {
+    name: "Aperturas con mancuernas",
+    primaryMuscles: ["pecho"],
+    secondaryMuscles: ["hombro anterior"],
+    equipment: ["mancuernas", "banca"],
+    tags: ["empuje", "aislamiento", "hipertrofia"],
+    guide: {
+      setup: ["Acuéstate con mancuernas sobre el pecho.", "Mantén codos ligeramente flexionados."],
+      technique: [
+        "Abre brazos con rango cómodo.",
+        "Regresa apretando el pecho sin golpear mancuernas.",
+      ],
+      commonMistakes: ["Bajar demasiado profundo.", "Convertirlo en press."],
+    },
+  },
+  {
+    name: "Jalón al pecho",
+    primaryMuscles: ["espalda"],
+    secondaryMuscles: ["bíceps", "hombro posterior"],
+    equipment: ["máquina", "polea"],
+    tags: ["tirón", "espalda", "máquina"],
+    guide: {
+      setup: ["Ajusta el soporte sobre los muslos.", "Toma la barra con agarre firme."],
+      technique: ["Tira hacia la parte alta del pecho.", "Sube controlando los hombros."],
+      commonMistakes: ["Jalar detrás del cuello.", "Balancear el torso."],
+    },
+  },
+  {
+    name: "Dominadas asistidas",
+    primaryMuscles: ["espalda"],
+    secondaryMuscles: ["bíceps", "core"],
+    equipment: ["máquina", "banda", "barra"],
+    tags: ["tirón", "espalda", "sin máquinas"],
+    guide: {
+      setup: ["Elige asistencia que permita control.", "Cuelga con hombros activos."],
+      technique: ["Sube llevando el pecho hacia la barra.", "Baja completo sin soltar tensión."],
+      commonMistakes: ["Patear para subir.", "Cortar demasiado el rango."],
+    },
+  },
+  {
+    name: "Remo con mancuerna",
+    primaryMuscles: ["espalda"],
+    secondaryMuscles: ["bíceps", "core"],
+    equipment: ["mancuerna", "banca"],
+    tags: ["tirón", "espalda", "unilateral"],
+    guide: {
+      setup: ["Apoya una mano o rodilla en la banca.", "Mantén espalda neutra."],
+      technique: ["Lleva la mancuerna hacia la cadera.", "Baja lento sin rotar el torso."],
+      commonMistakes: ["Encoger el hombro.", "Girar el cuerpo para levantar más."],
+    },
+  },
+  {
+    name: "Remo invertido",
+    primaryMuscles: ["espalda"],
+    secondaryMuscles: ["bíceps", "core"],
+    equipment: ["barra", "peso corporal"],
+    tags: ["tirón", "espalda", "sin máquinas"],
+    guide: {
+      setup: ["Colócate bajo una barra estable.", "Mantén el cuerpo en línea recta."],
+      technique: ["Jala el pecho hacia la barra.", "Baja controlando sin perder postura."],
+      commonMistakes: ["Hundir la cadera.", "Acortar demasiado el recorrido."],
+    },
+  },
+  {
+    name: "Remo sentado en polea",
+    primaryMuscles: ["espalda"],
+    secondaryMuscles: ["bíceps", "hombro posterior"],
+    equipment: ["polea", "máquina"],
+    tags: ["tirón", "espalda", "máquina"],
+    guide: {
+      setup: ["Siéntate alto con pies apoyados.", "Toma el agarre sin redondear espalda."],
+      technique: ["Jala hacia el torso.", "Regresa controlando la extensión de brazos."],
+      commonMistakes: ["Balancearse hacia atrás.", "Perder postura al estirar."],
+    },
+  },
+  {
+    name: "Face pull",
+    primaryMuscles: ["hombro posterior", "espalda alta"],
+    secondaryMuscles: ["rotadores externos"],
+    equipment: ["polea", "banda"],
+    tags: ["tirón", "hombros", "accesorio"],
+    guide: {
+      setup: ["Coloca la polea a la altura de la cara.", "Toma la cuerda con brazos extendidos."],
+      technique: [
+        "Jala hacia la cara separando las manos.",
+        "Controla el regreso sin encoger hombros.",
+      ],
+      commonMistakes: ["Usar demasiado peso.", "Convertirlo en remo."],
+    },
+  },
+  {
+    name: "Elevaciones laterales",
+    primaryMuscles: ["hombros"],
+    secondaryMuscles: ["trapecio"],
+    equipment: ["mancuernas", "polea", "banda"],
+    tags: ["hombros", "aislamiento", "hipertrofia"],
+    guide: {
+      setup: ["Sostén la carga a los lados.", "Mantén torso estable."],
+      technique: ["Eleva brazos hasta una altura cómoda.", "Baja lento sin perder control."],
+      commonMistakes: ["Balancear el cuerpo.", "Encoger hombros en cada repetición."],
+    },
+  },
+  {
+    name: "Curl de bíceps",
+    primaryMuscles: ["bíceps"],
+    secondaryMuscles: ["antebrazos"],
+    equipment: ["mancuernas", "barra", "polea"],
+    tags: ["brazos", "aislamiento"],
+    guide: {
+      setup: ["De pie con codos cerca del torso.", "Agarra la carga con muñecas firmes."],
+      technique: ["Flexiona codos sin mover hombros.", "Baja controlando todo el recorrido."],
+      commonMistakes: ["Balancear la espalda.", "Adelantar los codos para terminar."],
+    },
+  },
+  {
+    name: "Extensión de tríceps en polea",
+    primaryMuscles: ["tríceps"],
+    secondaryMuscles: [],
+    equipment: ["polea"],
+    tags: ["brazos", "aislamiento", "máquina"],
+    guide: {
+      setup: [
+        "Coloca codos cerca del torso.",
+        "Inclina ligeramente el cuerpo si ayuda a estabilizar.",
+      ],
+      technique: ["Extiende codos hacia abajo.", "Regresa sin mover los hombros."],
+      commonMistakes: ["Abrir los codos.", "Usar el torso para empujar."],
+    },
+  },
+  {
+    name: "Fondos en banco",
+    primaryMuscles: ["tríceps"],
+    secondaryMuscles: ["pecho", "hombro anterior"],
+    equipment: ["banca", "peso corporal"],
+    tags: ["empuje", "brazos", "sin máquinas"],
+    guide: {
+      setup: ["Apoya manos en el borde de la banca.", "Coloca pies al frente con control."],
+      technique: ["Baja solo hasta un rango cómodo.", "Sube extendiendo codos sin rebotar."],
+      commonMistakes: ["Bajar demasiado profundo.", "Alejar demasiado la cadera de la banca."],
+    },
+  },
+  {
+    name: "Plancha",
+    primaryMuscles: ["core"],
+    secondaryMuscles: ["hombros", "glúteos"],
+    equipment: ["peso corporal"],
+    tags: ["core", "sin máquinas", "estabilidad"],
+    guide: {
+      setup: ["Apoya antebrazos bajo hombros.", "Forma una línea de cabeza a talones."],
+      technique: ["Mantén abdomen y glúteos activos.", "Respira sin perder posición."],
+      commonMistakes: ["Hundir la cadera.", "Elevar demasiado la cadera."],
+    },
+  },
+  {
+    name: "Dead bug",
+    primaryMuscles: ["core"],
+    secondaryMuscles: ["flexores de cadera"],
+    equipment: ["peso corporal"],
+    tags: ["core", "principiante", "control"],
+    guide: {
+      setup: ["Acuéstate boca arriba con brazos arriba.", "Eleva rodillas a 90 grados."],
+      technique: [
+        "Extiende brazo y pierna contraria con control.",
+        "Mantén la espalda baja estable.",
+      ],
+      commonMistakes: ["Arquear la espalda.", "Moverse demasiado rápido."],
+    },
+  },
+  {
+    name: "Pallof press",
+    primaryMuscles: ["core"],
+    secondaryMuscles: ["hombros", "glúteos"],
+    equipment: ["polea", "banda"],
+    tags: ["core", "anti-rotación", "funcional"],
+    guide: {
+      setup: ["Colócate de lado a la polea o banda.", "Sostén el agarre frente al pecho."],
+      technique: [
+        "Extiende brazos resistiendo la rotación.",
+        "Regresa lento manteniendo postura.",
+      ],
+      commonMistakes: ["Girar el torso.", "Usar una resistencia que rompa la técnica."],
+    },
+  },
+  {
+    name: "Farmer carry",
+    primaryMuscles: ["core", "antebrazos"],
+    secondaryMuscles: ["trapecio", "glúteos", "piernas"],
+    equipment: ["mancuernas", "kettlebells"],
+    tags: ["carga", "funcional", "core"],
+    guide: {
+      setup: ["Toma dos cargas del mismo peso.", "Párate alto con hombros estables."],
+      technique: ["Camina con pasos controlados.", "Mantén abdomen firme y mirada al frente."],
+      commonMistakes: [
+        "Inclinarse hacia un lado.",
+        "Caminar demasiado rápido perdiendo postura.",
+      ],
+    },
+  },
+  {
+    name: "Kettlebell swing",
+    primaryMuscles: ["glúteos", "isquiotibiales"],
+    secondaryMuscles: ["core", "espalda alta"],
+    equipment: ["kettlebell"],
+    tags: ["bisagra", "funcional", "potencia"],
+    guide: {
+      setup: [
+        "Coloca la kettlebell frente a los pies.",
+        "Prepara una bisagra de cadera, no una sentadilla.",
+      ],
+      technique: ["Impulsa con cadera y glúteos.", "Deja que los brazos guíen, no levanten."],
+      commonMistakes: [
+        "Hacer sentadilla en cada repetición.",
+        "Levantar con hombros o espalda baja.",
+      ],
+    },
+  },
 ];
 
 export function createSeedExercises(now = toIsoUtc()): Exercise[] {
@@ -101,11 +467,6 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
 
   try {
     return await db.transaction("rw", db.meta, db.exercises, async () => {
-      const existingSeed = await db.meta.get(EXERCISE_LIBRARY_SEED_META_ID);
-      if (existingSeed) {
-        return 0;
-      }
-
       const seedExercises = createSeedExercises(now);
       const existingExercises = await db.exercises.toArray();
       const existingNames = new Set(
@@ -116,7 +477,7 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
       );
 
       if (missingExercises.length > 0) {
-        await db.exercises.bulkAdd(missingExercises);
+        await db.exercises.bulkPut(missingExercises);
       }
 
       await db.meta.put({

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RoutineExercise } from "../../domain";
+import { createSeedExercises } from "../../data";
 import {
   buildRoutineEditGraph,
   buildRoutineGraph,
@@ -7,6 +8,7 @@ import {
   moveRoutineExerciseInDay,
   removeRoutineExerciseFromDay,
 } from "./routineBuilders";
+import { ROUTINE_PRESETS, buildRoutineGraphFromPreset } from "./routinePresets";
 import type { RoutineSummary } from "./types";
 
 describe("routine graph builder", () => {
@@ -144,6 +146,33 @@ describe("routine graph builder", () => {
         restSeconds: 0,
       },
     ]);
+  });
+
+  it("builds editable routine graphs from every preset", () => {
+    const exercises = createSeedExercises("2026-06-20T00:00:00.000Z");
+
+    for (const [index, preset] of ROUTINE_PRESETS.entries()) {
+      const graph = buildRoutineGraphFromPreset(
+        preset,
+        exercises,
+        index + 1,
+        "2026-06-20T00:00:00.000Z",
+      );
+
+      expect(graph.routine).toMatchObject({
+        name: preset.name,
+        goal: preset.goal,
+        status: "active",
+        manualOrder: index + 1,
+      });
+      expect(graph.routineDays).toHaveLength(preset.days.length);
+      expect(graph.routineExercises).toHaveLength(
+        preset.days.reduce((total, day) => total + day.exercises.length, 0),
+      );
+      expect(graph.routineRevision.snapshot.routineExercises).toEqual(
+        graph.routineExercises,
+      );
+    }
   });
 });
 

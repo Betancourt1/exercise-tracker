@@ -14,6 +14,7 @@ import {
   EXERCISE_LIBRARY_SEED_META_ID,
   archiveExercise,
   completeWorkoutSession,
+  createSeedExercises,
   createWorkoutDraft,
   discardWorkoutSession,
   ensureSettings,
@@ -740,15 +741,20 @@ describe("data repositories", () => {
 
     try {
       const exercises = await listSeededAvailableExercises(db);
+      const exerciseNames = exercises.map((exercise) => exercise.name);
+      const normalizedNames = exercises.map((exercise) => exercise.nameNormalized);
 
-      expect(exercises.map((exercise) => exercise.name)).toEqual([
-        "Peso muerto rumano",
-        "Press banca",
-        "Press militar",
-        "Remo con barra",
-        "Sentadilla",
-        "Zancadas",
-      ]);
+      expect(exercises).toHaveLength(createSeedExercises().length);
+      expect(normalizedNames).toEqual([...normalizedNames].sort());
+      expect(exerciseNames).toEqual(
+        expect.arrayContaining([
+          "Sentadilla",
+          "Flexiones",
+          "Jalón al pecho",
+          "Plancha",
+          "Farmer carry",
+        ]),
+      );
       expect(exercises.every((exercise) => exercise.archivedAt === null)).toBe(true);
     } finally {
       db.close();
@@ -768,9 +774,11 @@ describe("data repositories", () => {
       const seedMeta = await db.meta.get(EXERCISE_LIBRARY_SEED_META_ID);
       const exerciseIds = exercises.map((exercise) => exercise.id);
 
-      expect(insertedCounts.reduce((total, count) => total + count, 0)).toBe(6);
-      expect(exercises).toHaveLength(6);
-      expect(new Set(exerciseIds).size).toBe(6);
+      expect(insertedCounts.reduce((total, count) => total + count, 0)).toBe(
+        createSeedExercises().length,
+      );
+      expect(exercises).toHaveLength(createSeedExercises().length);
+      expect(new Set(exerciseIds).size).toBe(createSeedExercises().length);
       expect(exerciseIds.every((id) => id.startsWith("seed:exercise:"))).toBe(true);
       expect(seedMeta).toMatchObject({
         id: EXERCISE_LIBRARY_SEED_META_ID,
