@@ -141,6 +141,39 @@ describe("database export/import helpers", () => {
     );
   });
 
+  it("accepts set logs that reference routine exercises from the session revision snapshot", () => {
+    const exportData = createValidExportData();
+    const currentRoutineExercise: RoutineExercise = {
+      ...createRoutineExercise(),
+      id: "routine-exercise-current",
+      targetSets: 3,
+    };
+    exportData.routineExercises = [currentRoutineExercise];
+
+    const result = validateImportPayload(createDatabaseExport(exportData));
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects set logs when routine exercise is absent from current graph and session revision", () => {
+    const exportData = createValidExportData();
+    exportData.routineExercises = [];
+    exportData.routineRevisions[0] = {
+      ...exportData.routineRevisions[0],
+      snapshot: {
+        ...exportData.routineRevisions[0].snapshot,
+        routineExercises: [],
+      },
+    };
+
+    const result = validateImportPayload(createDatabaseExport(exportData));
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("ejercicio de rutina inexistente");
+    }
+  });
+
   it("safe replace returns a backup before replacing data", async () => {
     const db = new WorkoutDatabase(`test-safe-replace-${crypto.randomUUID()}`);
     const originalExercise = createExercise("original-exercise", "Sentadilla");

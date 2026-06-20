@@ -316,8 +316,12 @@ function validateReferences(data: DatabaseExportData): string | null {
   const routineDayIds = new Set(data.routineDays.map((record) => record.id));
   const routineExerciseIds = new Set(data.routineExercises.map((record) => record.id));
   const routineRevisionIds = new Set(data.routineRevisions.map((record) => record.id));
+  const routineRevisionsById = new Map(
+    data.routineRevisions.map((record) => [record.id, record]),
+  );
   const exerciseIds = new Set(data.exercises.map((record) => record.id));
   const sessionIds = new Set(data.workoutSessions.map((record) => record.id));
+  const sessionsById = new Map(data.workoutSessions.map((record) => [record.id, record]));
 
   for (const routineDay of data.routineDays) {
     if (!routineIds.has(routineDay.routineId)) {
@@ -361,13 +365,45 @@ function validateReferences(data: DatabaseExportData): string | null {
     }
     if (
       setLog.routineExerciseId !== null &&
-      !routineExerciseIds.has(setLog.routineExerciseId)
+      !hasRoutineExerciseReference(
+        setLog,
+        routineExerciseIds,
+        sessionsById,
+        routineRevisionsById,
+      )
     ) {
       return `setLogs ${setLog.id} apunta a ejercicio de rutina inexistente.`;
     }
   }
 
   return null;
+}
+
+function hasRoutineExerciseReference(
+  setLog: SetLog,
+  currentRoutineExerciseIds: Set<string>,
+  sessionsById: Map<string, WorkoutSession>,
+  routineRevisionsById: Map<string, RoutineRevision>,
+): boolean {
+  if (setLog.routineExerciseId === null) {
+    return true;
+  }
+
+  if (currentRoutineExerciseIds.has(setLog.routineExerciseId)) {
+    return true;
+  }
+
+  const session = sessionsById.get(setLog.sessionId);
+  if (!session?.routineRevisionId) {
+    return false;
+  }
+
+  const routineRevision = routineRevisionsById.get(session.routineRevisionId);
+  return (
+    routineRevision?.snapshot.routineExercises.some(
+      (routineExercise) => routineExercise.id === setLog.routineExerciseId,
+    ) ?? false
+  );
 }
 
 function firstError<T>(

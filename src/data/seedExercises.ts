@@ -1,5 +1,5 @@
 import type { Exercise } from "../domain/types";
-import { createId, normalizeExerciseName, toIsoUtc } from "../domain/utils";
+import { normalizeExerciseName, toIsoUtc } from "../domain/utils";
 import { appDb, type WorkoutDatabase } from "./db";
 
 export const EXERCISE_LIBRARY_SEED_META_ID = "seed:exercise-library:1";
@@ -87,7 +87,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
 export function createSeedExercises(now = toIsoUtc()): Exercise[] {
   return seedExerciseInputs.map((exercise) => ({
     ...exercise,
-    id: createId(),
+    id: createSeedExerciseId(exercise.name),
     nameNormalized: normalizeExerciseName(exercise.name),
     isCustom: false,
     archivedAt: null,
@@ -97,34 +97,61 @@ export function createSeedExercises(now = toIsoUtc()): Exercise[] {
 }
 
 export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<number> {
-  const existingSeed = await db.meta.get(EXERCISE_LIBRARY_SEED_META_ID);
-  if (existingSeed) {
-    return 0;
-  }
-
   const now = toIsoUtc();
-  const seedExercises = createSeedExercises(now);
-  const existingExercises = await db.exercises.toArray();
-  const existingNames = new Set(existingExercises.map((exercise) => exercise.nameNormalized));
-  const missingExercises = seedExercises.filter(
-    (exercise) => !existingNames.has(exercise.nameNormalized),
-  );
 
-  await db.transaction("rw", db.meta, db.exercises, async () => {
-    if (missingExercises.length > 0) {
-      await db.exercises.bulkAdd(missingExercises);
+  try {
+    return await db.transaction("rw", db.meta, db.exercises, async () => {
+      const existingSeed = await db.meta.get(EXERCISE_LIBRARY_SEED_META_ID);
+      if (existingSeed) {
+        return 0;
+      }
+
+      const seedExercises = createSeedExercises(now);
+      const existingExercises = await db.exercises.toArray();
+      const existingNames = new Set(
+        existingExercises.map((exercise) => exercise.nameNormalized),
+      );
+      const missingExercises = seedExercises.filter(
+        (exercise) => !existingNames.has(exercise.nameNormalized),
+      );
+
+      if (missingExercises.length > 0) {
+        await db.exercises.bulkAdd(missingExercises);
+      }
+
+      await db.meta.put({
+        id: EXERCISE_LIBRARY_SEED_META_ID,
+        schemaVersion: 1,
+        createdAt: now,
+        updatedAt: now,
+        value: {
+          insertedCount: missingExercises.length,
+        },
+      });
+
+      return missingExercises.length;
+    });
+  } catch (error) {
+    const existingSeed = await db.meta.get(EXERCISE_LIBRARY_SEED_META_ID);
+    if (existingSeed && isConstraintError(error)) {
+      return 0;
     }
 
-    await db.meta.put({
-      id: EXERCISE_LIBRARY_SEED_META_ID,
-      schemaVersion: 1,
-      createdAt: now,
-      updatedAt: now,
-      value: {
-        insertedCount: missingExercises.length,
-      },
-    });
-  });
+    throw error;
+  }
+}
 
-  return missingExercises.length;
+function createSeedExerciseId(name: string): string {
+  return `seed:exercise:${normalizeExerciseName(name).replace(/\s+/g, "-")}`;
+}
+
+function isConstraintError(error: unknown): boolean {
+  return (
+    isRecord(error) &&
+    (error.name === "ConstraintError" || error.name === "BulkError")
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

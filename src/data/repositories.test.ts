@@ -11,6 +11,7 @@ import type {
   WorkoutSession,
 } from "../domain";
 import {
+  EXERCISE_LIBRARY_SEED_META_ID,
   archiveExercise,
   ensureSettings,
   getSettings,
@@ -29,6 +30,7 @@ import {
   saveSettings,
   saveRoutineGraph,
   saveRoutineGraphRevision,
+  seedExerciseLibrary,
   saveWorkoutSession,
   softDeleteRoutine,
   restoreRoutine,
@@ -354,6 +356,31 @@ describe("data repositories", () => {
         "Zancadas",
       ]);
       expect(exercises.every((exercise) => exercise.archivedAt === null)).toBe(true);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("seeds the exercise library idempotently under concurrent calls", async () => {
+    const db = new WorkoutDatabase(`test-concurrent-exercise-seed-${crypto.randomUUID()}`);
+
+    try {
+      const insertedCounts = await Promise.all([
+        seedExerciseLibrary(db),
+        seedExerciseLibrary(db),
+      ]);
+      const exercises = await listSeededAvailableExercises(db);
+      const seedMeta = await db.meta.get(EXERCISE_LIBRARY_SEED_META_ID);
+      const exerciseIds = exercises.map((exercise) => exercise.id);
+
+      expect(insertedCounts.reduce((total, count) => total + count, 0)).toBe(6);
+      expect(exercises).toHaveLength(6);
+      expect(new Set(exerciseIds).size).toBe(6);
+      expect(exerciseIds.every((id) => id.startsWith("seed:exercise:"))).toBe(true);
+      expect(seedMeta).toMatchObject({
+        id: EXERCISE_LIBRARY_SEED_META_ID,
+      });
     } finally {
       db.close();
       await db.delete();
