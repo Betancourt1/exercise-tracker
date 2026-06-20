@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   CalendarDays,
+  Download,
   Dumbbell,
   Library,
   Play,
@@ -12,6 +13,7 @@ import {
   Search,
   Settings,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { ProgressPage } from "./features/progress/ProgressPage";
 import { RoutinesPage } from "./features/routines/RoutinesPage";
@@ -19,7 +21,13 @@ import { loadHighestPriorityActiveRoutine } from "./features/routines/routineQue
 import type { RoutineSummary } from "./features/routines/types";
 import { WorkoutPage } from "./features/workout/WorkoutPage";
 import type { WorkoutStartRequest } from "./features/workout/types";
-import { getLatestInProgressWorkoutDraft } from "./data";
+import {
+  exportDatabaseJson,
+  getLatestInProgressWorkoutDraft,
+  replaceDatabaseFromExportWithBackup,
+  stringifyDatabaseExport,
+} from "./data";
+import type { DatabaseExport } from "./data";
 
 type PageId = "today" | "routines" | "exercises" | "progress" | "settings" | "workout";
 
@@ -27,6 +35,11 @@ type NavItem = {
   id: PageId;
   label: string;
   icon: LucideIcon;
+};
+
+type SettingsStatus = {
+  tone: "success" | "error" | "neutral";
+  message: string;
 };
 
 const navItems: NavItem[] = [
@@ -103,6 +116,9 @@ function App() {
   const refreshInProgressWorkout = useCallback(async () => {
     setHasInProgressWorkout(Boolean(await getLatestInProgressWorkoutDraft()));
   }, []);
+  const refreshAppData = useCallback(async () => {
+    await Promise.all([refreshTodayRoutine(), refreshInProgressWorkout()]);
+  }, [refreshInProgressWorkout, refreshTodayRoutine]);
 
   useEffect(() => {
     void refreshTodayRoutine();
@@ -149,6 +165,7 @@ function App() {
           workoutStartRequest={workoutStartRequest}
           onWorkoutExit={exitWorkout}
           onWorkoutChanged={refreshInProgressWorkout}
+          onDataImported={refreshAppData}
         />
         <MobileContext activePage={activePage} />
       </main>
@@ -250,6 +267,7 @@ function Page({
   workoutStartRequest,
   onWorkoutExit,
   onWorkoutChanged,
+  onDataImported,
 }: {
   activePage: PageId;
   todayRoutine: RoutineSummary | null;
@@ -261,6 +279,7 @@ function Page({
   workoutStartRequest: WorkoutStartRequest | null;
   onWorkoutExit: (page: "today" | "routines") => void;
   onWorkoutChanged: () => void;
+  onDataImported: () => Promise<void>;
 }) {
   switch (activePage) {
     case "routines":
@@ -286,7 +305,7 @@ function Page({
     case "progress":
       return <ProgressPage onTrain={() => onNavigate("today")} />;
     case "settings":
-      return <SettingsPage />;
+      return <SettingsPage onDataImported={onDataImported} />;
     case "today":
     default:
       return (
@@ -470,16 +489,156 @@ function ExercisesPage() {
   );
 }
 
-function SettingsPage() {
+function SettingsPage({ onDataImported }: { onDataImported: () => Promise<void> }) {
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [status, setStatus] = useState<SettingsStatus | null>(null);
+  const [latestBackup, setLatestBackup] = useState<DatabaseExport | null>(null);
+  const [isWorking, setIsWorking] = useState(false);
+
+  async function handleExport() {
+    setIsWorking(true);
+    setStatus({ tone: "neutral", message: "Preparando respaldo local..." });
+
+    try {
+      const exportPayload = await exportDatabaseJson();
+      downloadDatabaseExport(exportPayload, "mi-rutina-respaldo");
+      setStatus({
+        tone: "success",
+        message: "Respaldo exportado. Guarda este JSON en un lugar seguro.",
+      });
+    } catch {
+      setStatus({
+        tone: "error",
+        message: "No se pudo exportar el respaldo local.",
+      });
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  function openImportPicker() {
+    if (!importInputRef.current) {
+      return;
+    }
+
+    importInputRef.current.value = "";
+    importInputRef.current.click();
+  }
+
+  async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Importar este respaldo reemplazará todos los datos locales actuales. Se creará un respaldo del estado actual antes de reemplazar. ¿Continuar?",
+    );
+    if (!confirmed) {
+      input.value = "";
+      return;
+    }
+
+    setIsWorking(true);
+    setLatestBackup(null);
+    setStatus({ tone: "neutral", message: "Validando respaldo e importando datos..." });
+
+    try {
+      const result = await replaceDatabaseFromExportWithBackup(await file.text());
+      await onDataImported();
+      setLatestBackup(result.backup);
+      setStatus({
+        tone: "success",
+        message:
+          "Importación completa. La app ya usa los datos importados y se creó un respaldo del estado anterior.",
+      });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        message: `No se pudo importar: ${getImportErrorMessage(error)}`,
+      });
+    } finally {
+      setIsWorking(false);
+      input.value = "";
+    }
+  }
+
   return (
     <section className="page-section">
       <PageTitle kicker="Ajustes" title="Preferencias locales" />
 
       <article className="panel settings-list">
+        <div className="settings-intro">
+          <strong>Respaldo y recuperación</strong>
+          <p>
+            Tus rutinas, sesiones e historial viven en este navegador. Exporta un JSON
+            antes de cambiar de equipo o importar otro respaldo.
+          </p>
+        </div>
+
         <SettingsRow title="Unidades" detail="kg por defecto" />
-        <SettingsRow title="Exportar datos" detail="Rutinas e historial local" />
-        <SettingsRow title="Importar respaldo" detail="Recuperar datos guardados" />
+        <SettingsRow
+          title="Exportar datos"
+          detail="Descarga rutinas, sesiones, ejercicios y ajustes locales."
+          action={
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleExport}
+              disabled={isWorking}
+            >
+              <Download size={16} />
+              Exportar datos
+            </button>
+          }
+        />
+        <SettingsRow
+          title="Importar respaldo"
+          detail="Reemplaza los datos locales con un archivo JSON validado."
+          action={
+            <div className="settings-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={openImportPicker}
+                disabled={isWorking}
+              >
+                <Upload size={16} />
+                Importar JSON
+              </button>
+              {latestBackup ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() =>
+                    downloadDatabaseExport(
+                      latestBackup,
+                      "mi-rutina-respaldo-antes-importar",
+                    )
+                  }
+                >
+                  <Download size={16} />
+                  Respaldo anterior
+                </button>
+              ) : null}
+            </div>
+          }
+        />
         <SettingsRow title="Acciones destructivas" detail="Confirmación obligatoria" danger />
+        <input
+          ref={importInputRef}
+          className="file-input-hidden"
+          type="file"
+          accept=".json,application/json"
+          aria-label="Importar respaldo JSON"
+          onChange={handleImportFile}
+        />
+        {status ? (
+          <p className="settings-status" data-tone={status.tone} role="status">
+            {status.message}
+          </p>
+        ) : null}
       </article>
     </section>
   );
@@ -568,10 +727,12 @@ function SettingsRow({
   title,
   detail,
   danger,
+  action,
 }: {
   title: string;
   detail: string;
   danger?: boolean;
+  action?: ReactNode;
 }) {
   return (
     <div className="settings-row" data-danger={danger}>
@@ -579,9 +740,31 @@ function SettingsRow({
         <strong>{title}</strong>
         <span>{detail}</span>
       </div>
-      {danger ? <Trash2 size={16} /> : <span className="row-status">Pendiente</span>}
+      {action ?? (danger ? <Trash2 size={16} /> : <span className="row-status">Pendiente</span>)}
     </div>
   );
+}
+
+function downloadDatabaseExport(exportPayload: DatabaseExport, filePrefix: string) {
+  const json = stringifyDatabaseExport(exportPayload);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `${filePrefix}-${formatFileDate(exportPayload.exportedAt)}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function formatFileDate(value: string) {
+  return value.replace(/[:.]/g, "-");
+}
+
+function getImportErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Error desconocido al leer el respaldo.";
 }
 
 function EmptyRows({ rows, labels }: { rows: number; labels: string[] }) {

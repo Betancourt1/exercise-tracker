@@ -1807,8 +1807,37 @@ input:focus-visible {
   gap: 10px;
 }
 
+.settings-intro {
+  border: 1px solid #cfe9d7;
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--routine-soft);
+}
+
+.settings-intro strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.settings-intro p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .settings-row {
+  align-items: flex-start;
   min-height: 54px;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.settings-row > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
 .settings-row strong {
@@ -1828,6 +1857,39 @@ input:focus-visible {
   padding: 4px 8px;
   font-size: 12px;
   font-weight: 700;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.settings-status {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.settings-status[data-tone="success"] {
+  border-color: #cfe9d7;
+  background: var(--routine-soft);
+  color: var(--routine);
+}
+
+.settings-status[data-tone="error"] {
+  border-color: #fecaca;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .context-note {
@@ -2043,6 +2105,17 @@ input:focus-visible {
 
   .workout-bottom-bar {
     bottom: 64px;
+  }
+
+  .settings-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-actions,
+  .settings-row .secondary-button {
+    justify-content: center;
+    width: 100%;
   }
 
   .builder-editor,
