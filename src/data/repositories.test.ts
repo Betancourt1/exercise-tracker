@@ -30,6 +30,7 @@ import {
   saveWorkoutSession,
   softDeleteRoutine,
   restoreRoutine,
+  updateRoutineManualOrders,
   WorkoutDatabase,
 } from "./index";
 
@@ -112,6 +113,38 @@ describe("data repositories", () => {
         id: "routine-revision-1",
         effectiveTo: null,
       });
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("updates routine manual order in a batch", async () => {
+    const db = new WorkoutDatabase(`test-routine-order-${crypto.randomUUID()}`);
+    const firstRoutine = createRoutine();
+    const secondRoutine: Routine = {
+      ...createRoutine(),
+      id: "routine-2",
+      name: "Tren superior",
+      manualOrder: 2,
+    };
+
+    try {
+      await saveRoutine(firstRoutine, db);
+      await saveRoutine(secondRoutine, db);
+
+      await updateRoutineManualOrders(
+        [
+          { routineId: "routine-1", manualOrder: 2, updatedAt: "2026-06-21T00:00:00.000Z" },
+          { routineId: "routine-2", manualOrder: 1, updatedAt: "2026-06-21T00:00:00.000Z" },
+        ],
+        db,
+      );
+
+      expect((await listActiveRoutines(db)).map((routine) => routine.id)).toEqual([
+        "routine-2",
+        "routine-1",
+      ]);
     } finally {
       db.close();
       await db.delete();

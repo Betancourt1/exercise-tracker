@@ -15,6 +15,12 @@ export type RoutineGraph = {
   routineRevision: RoutineRevision;
 };
 
+export type ManualOrderUpdate = {
+  routineId: string;
+  manualOrder: number;
+  updatedAt?: string;
+};
+
 export async function listRoutines(
   options: { includeDeleted?: boolean } = {},
   db: WorkoutDatabase = appDb,
@@ -107,11 +113,38 @@ export async function saveRoutineGraph(
   graph: RoutineGraph,
   db: WorkoutDatabase = appDb,
 ): Promise<void> {
-  await db.transaction("rw", db.routines, db.routineDays, db.routineExercises, db.routineRevisions, async () => {
-    await db.routines.put(graph.routine);
-    await db.routineDays.bulkPut(graph.routineDays);
-    await db.routineExercises.bulkPut(graph.routineExercises);
-    await db.routineRevisions.put(graph.routineRevision);
+  await db.transaction(
+    "rw",
+    db.routines,
+    db.routineDays,
+    db.routineExercises,
+    db.routineRevisions,
+    async () => {
+      await db.routines.put(graph.routine);
+      await db.routineDays.bulkPut(graph.routineDays);
+      await db.routineExercises.bulkPut(graph.routineExercises);
+      await db.routineRevisions.put(graph.routineRevision);
+    },
+  );
+}
+
+export async function updateRoutineManualOrders(
+  updates: ManualOrderUpdate[],
+  db: WorkoutDatabase = appDb,
+): Promise<number> {
+  const updatedAt = toIsoUtc();
+
+  return db.transaction("rw", db.routines, async () => {
+    let updatedCount = 0;
+
+    for (const update of updates) {
+      updatedCount += await db.routines.update(update.routineId, {
+        manualOrder: update.manualOrder,
+        updatedAt: update.updatedAt ?? updatedAt,
+      });
+    }
+
+    return updatedCount;
   });
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -10,9 +10,11 @@ import {
   RotateCcw,
   Search,
   Settings,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { RoutinesPage } from "./features/routines/RoutinesPage";
+import { loadHighestPriorityActiveRoutine } from "./features/routines/routineQueries";
+import type { RoutineSummary } from "./features/routines/types";
 
 type PageId = "today" | "routines" | "exercises" | "progress" | "settings";
 
@@ -73,10 +75,18 @@ const contextByPage: Record<
 
 function App() {
   const [activePage, setActivePage] = useState<PageId>("today");
+  const [todayRoutine, setTodayRoutine] = useState<RoutineSummary | null>(null);
   const activeNavItem = useMemo(
     () => navItems.find((item) => item.id === activePage) ?? navItems[0],
     [activePage],
   );
+  const refreshTodayRoutine = useCallback(async () => {
+    setTodayRoutine(await loadHighestPriorityActiveRoutine());
+  }, []);
+
+  useEffect(() => {
+    void refreshTodayRoutine();
+  }, [refreshTodayRoutine]);
 
   return (
     <div className="app-shell">
@@ -84,7 +94,12 @@ function App() {
 
       <main className="workspace" aria-labelledby="page-title">
         <MobileHeader activeItem={activeNavItem} />
-        <Page activePage={activePage} onNavigate={setActivePage} />
+        <Page
+          activePage={activePage}
+          todayRoutine={todayRoutine}
+          onNavigate={setActivePage}
+          onRoutinesChanged={refreshTodayRoutine}
+        />
         <MobileContext activePage={activePage} />
       </main>
 
@@ -176,14 +191,18 @@ function MobileHeader({ activeItem }: { activeItem: NavItem }) {
 
 function Page({
   activePage,
+  todayRoutine,
   onNavigate,
+  onRoutinesChanged,
 }: {
   activePage: PageId;
+  todayRoutine: RoutineSummary | null;
   onNavigate: (page: PageId) => void;
+  onRoutinesChanged: () => void;
 }) {
   switch (activePage) {
     case "routines":
-      return <RoutinesPage />;
+      return <RoutinesPage onRoutinesChanged={onRoutinesChanged} />;
     case "exercises":
       return <ExercisesPage />;
     case "progress":
@@ -192,11 +211,19 @@ function Page({
       return <SettingsPage />;
     case "today":
     default:
-      return <TodayPage onNavigate={onNavigate} />;
+      return <TodayPage todayRoutine={todayRoutine} onNavigate={onNavigate} />;
   }
 }
 
-function TodayPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
+function TodayPage({
+  todayRoutine,
+  onNavigate,
+}: {
+  todayRoutine: RoutineSummary | null;
+  onNavigate: (page: PageId) => void;
+}) {
+  const activeSummary = todayRoutine;
+
   return (
     <section className="page-section">
       <PageTitle
@@ -218,9 +245,13 @@ function TodayPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
         <article className="panel next-session">
           <div>
             <p className="panel-label">Próxima sesión</p>
-            <h2>No hay rutina activa</h2>
+            <h2>{activeSummary ? activeSummary.routine.name : "No hay rutina activa"}</h2>
             <p className="muted">
-              Crea una rutina para ver aquí el siguiente bloque y empezar a entrenar.
+              {activeSummary
+                ? `${activeSummary.routine.goal || "General"} · ${activeSummary.days.length} ${
+                    activeSummary.days.length === 1 ? "día activo" : "días activos"
+                  } · ${activeSummary.exerciseCount} ejercicios configurados.`
+                : "Crea una rutina para ver aquí el siguiente bloque y empezar a entrenar."}
             </p>
           </div>
           <div className="button-row">
@@ -230,17 +261,25 @@ function TodayPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
               onClick={() => onNavigate("routines")}
             >
               <Plus size={16} />
-              Crear rutina
+              {activeSummary ? "Ver rutinas" : "Crear rutina"}
             </button>
           </div>
         </article>
 
         <article className="panel compact-panel">
           <p className="panel-label">Prioridad</p>
-          <EmptyRows
-            rows={3}
-            labels={["Rutina prioritaria", "Última sesión", "Próximo día"]}
-          />
+          {activeSummary ? (
+            <div className="priority-summary">
+              <strong>{activeSummary.routine.name}</strong>
+              <span>{activeSummary.routine.goal || "General"}</span>
+              <span>{activeSummary.days.map((day) => day.label).join(", ")}</span>
+            </div>
+          ) : (
+            <EmptyRows
+              rows={3}
+              labels={["Rutina prioritaria", "Última sesión", "Próximo día"]}
+            />
+          )}
         </article>
       </div>
 
@@ -254,54 +293,18 @@ function TodayPage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
             <RotateCcw size={16} />
           </button>
         </div>
-        <EmptyState
-          title="No hay sesiones planificadas"
-          body="Las rutinas creadas aparecerán aquí según su orden y próxima sesión."
-        />
-      </article>
-    </section>
-  );
-}
-
-function RoutinesPage() {
-  return (
-    <section className="page-section">
-      <PageTitle
-        kicker="Rutinas"
-        title="Rutinas"
-        action={
-          <button className="primary-button routine" type="button">
-            <Plus size={16} />
-            Nueva rutina
-          </button>
-        }
-      />
-
-      <div className="toolbar">
-        <label className="search-box">
-          <Search size={15} />
-          <input placeholder="Buscar rutina" aria-label="Buscar rutina" />
-        </label>
-        <button className="secondary-button" type="button">
-          <SlidersHorizontal size={16} />
-          Orden manual
-        </button>
-      </div>
-
-      <article className="panel">
-        <div className="table-like">
-          <div className="table-head">
-            <span>Rutina</span>
-            <span>Objetivo</span>
-            <span>Días</span>
-            <span>Última sesión</span>
-            <span>Estado</span>
+        {activeSummary ? (
+          <div className="routine-today-row">
+            <strong>{activeSummary.routine.name}</strong>
+            <span>{activeSummary.days.length} días activos</span>
+            <span>Entrenamiento pendiente de la siguiente slice</span>
           </div>
+        ) : (
           <EmptyState
-            title="Aún no tienes rutinas"
-            body="Crea la primera rutina para activar el constructor y ordenar tus bloques."
+            title="No hay sesiones planificadas"
+            body="Las rutinas creadas aparecerán aquí según su orden y próxima sesión."
           />
-        </div>
+        )}
       </article>
     </section>
   );
