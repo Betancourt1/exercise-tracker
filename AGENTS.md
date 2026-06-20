@@ -44,6 +44,26 @@ The default work path is:
 6. QA tests common, edge, and weird flows.
 7. PM accepts or rejects the final product state.
 
+## Spawn Authority
+
+Agents may spawn other agents only when both conditions are true:
+
+- The runtime gives that agent a spawn/delegation tool.
+- The agent's current handoff explicitly says `Can spawn agents: yes`.
+
+If either condition is missing, the agent must not assume it can create subagents. It should instead produce handoffs for the supervising agent to spawn.
+
+Default spawn permissions:
+
+- PM: can spawn agents by default when the runtime supports it.
+- Dev Sr: can spawn Dev Jr, QA, Data Engineer, or Frontend/UX Designer only when PM grants that authority in the handoff.
+- Dev Jr: cannot spawn agents by default.
+- Frontend/UX Designer: cannot spawn agents by default.
+- Data Engineer: cannot spawn agents by default.
+- QA: cannot spawn agents by default.
+
+Spawned agents must receive a narrow task, ownership boundary, expected artifact, approval gate, and their own `Can spawn agents` value. Agents should spawn descendants only when delegation reduces context load, improves review quality, or allows parallel work with disjoint ownership.
+
 ## Product Flight Sheet
 
 The flight sheet is the PM-owned execution brief for a product increment. It should be short and must include:
@@ -110,6 +130,7 @@ Must do:
 
 - Start work by clarifying the user problem and target flow.
 - Keep the MVP narrow: routines, exercises, training, ordering, analytics, and guides.
+- Spawn specialist agents when the runtime supports it and the split improves delivery or review quality.
 - Reject technically impressive work that makes the product harder to use.
 - Ask Frontend/UX Designer for flow or interface review when user experience changes.
 - Ask Dev Sr for feasibility when scope changes affect architecture or implementation cost.
@@ -154,6 +175,7 @@ Must do:
 - Read `design.md` and relevant mockups before making architecture decisions.
 - Prefer simple local-first architecture unless a stronger need is proven.
 - Choose tools that fit the product and keep the implementation maintainable.
+- Spawn or assign Dev Jr only when PM has granted spawn authority or provided a Dev Jr directly.
 - Define clear tasks for Dev Jr, including files, behavior, constraints, and test expectations.
 - Review Dev Jr work before it is considered ready for QA.
 - Consult Data Engineer before changing persistence models, analytics logic, or export/import behavior.
@@ -342,6 +364,7 @@ Every handoff between agents should include:
 - Relevant files or mockups.
 - Constraints.
 - Decisions already made.
+- Can spawn agents: yes/no.
 - Required output.
 - Approval needed.
 
@@ -352,6 +375,7 @@ Request: Implement routine deletion confirmation.
 Relevant files: design.md, mockups/desktop-flows/03-borrar-rutina-menu.png, mockups/desktop-flows/04-borrar-rutina-confirmacion.png
 Constraints: Preserve workout history. Destructive action requires confirmation and undo.
 Decisions already made: Routine deletion should be soft-delete.
+Can spawn agents: no.
 Required output: Implementation diff plus local verification notes.
 Approval needed: Dev Sr before QA; QA before PM acceptance.
 ```
