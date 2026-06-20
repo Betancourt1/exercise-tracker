@@ -13,6 +13,7 @@ import {
   Settings,
   Trash2,
 } from "lucide-react";
+import { ProgressPage } from "./features/progress/ProgressPage";
 import { RoutinesPage } from "./features/routines/RoutinesPage";
 import { loadHighestPriorityActiveRoutine } from "./features/routines/routineQueries";
 import type { RoutineSummary } from "./features/routines/types";
@@ -283,7 +284,7 @@ function Page({
     case "exercises":
       return <ExercisesPage />;
     case "progress":
-      return <ProgressPage />;
+      return <ProgressPage onTrain={() => onNavigate("today")} />;
     case "settings":
       return <SettingsPage />;
     case "today":
@@ -469,45 +470,6 @@ function ExercisesPage() {
   );
 }
 
-function ProgressPage() {
-  return (
-    <section className="page-section">
-      <PageTitle kicker="Progreso" title="Analíticas" />
-
-      <div className="metric-grid">
-        <MetricCard label="Sesiones" value="0" tone="training" />
-        <MetricCard label="Volumen" value="0 kg" tone="progress" />
-        <MetricCard label="Adherencia" value="-" tone="routine" />
-      </div>
-
-      <div className="split-grid progress-layout">
-        <article className="panel chart-panel">
-          <div className="panel-header">
-            <div>
-              <p className="panel-label">Volumen semanal</p>
-              <h2>Sin datos todavía</h2>
-            </div>
-          </div>
-          <div className="chart-placeholder" aria-label="Gráfica vacía">
-            <span />
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-        </article>
-        <article className="panel">
-          <p className="panel-label">Sesiones recientes</p>
-          <EmptyState
-            title="No hay historial"
-            body="Las sesiones guardadas alimentarán volumen, PRs y tendencia por ejercicio."
-          />
-        </article>
-      </div>
-    </section>
-  );
-}
-
 function SettingsPage() {
   return (
     <section className="page-section">
@@ -599,23 +561,6 @@ function MobileNav({
         );
       })}
     </nav>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "routine" | "training" | "progress";
-}) {
-  return (
-    <article className="metric-card" data-tone={tone}>
-      <p>{label}</p>
-      <strong>{value}</strong>
-    </article>
   );
 }
 

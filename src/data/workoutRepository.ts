@@ -239,6 +239,21 @@ export async function listCompletedWorkoutSessions(
   return sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 }
 
+export async function listCompletedProgressSetLogs(
+  db: WorkoutDatabase = appDb,
+): Promise<SetLog[]> {
+  const completedSessions = await listCompletedWorkoutSessions(db);
+  const completedSessionIds = new Set(completedSessions.map((session) => session.id));
+  if (completedSessionIds.size === 0) {
+    return [];
+  }
+
+  const setLogs = await db.setLogs.toArray();
+  return setLogs
+    .filter((setLog) => setLog.completed && completedSessionIds.has(setLog.sessionId))
+    .sort((a, b) => String(a.completedAt).localeCompare(String(b.completedAt)));
+}
+
 export async function saveSetLog(
   setLog: SetLog,
   db: WorkoutDatabase = appDb,

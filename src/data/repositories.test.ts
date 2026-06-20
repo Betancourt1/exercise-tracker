@@ -23,6 +23,8 @@ import {
   listSeededAvailableExercises,
   listActiveRoutines,
   listAvailableExercises,
+  listCompletedProgressSetLogs,
+  listCompletedWorkoutSessions,
   listCompletedSetLogsForExercise,
   listExercises,
   listRoutineDays,
@@ -361,6 +363,83 @@ describe("data repositories", () => {
 
       expect((await listCompletedSetLogsForExercise("exercise-1", db)).map((setLog) => setLog.id))
         .toEqual(["completed-set"]);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("lists progress sessions and set logs only from completed workouts", async () => {
+    const db = new WorkoutDatabase(`test-progress-completed-only-${crypto.randomUUID()}`);
+    const completedSession = createWorkoutSession({
+      id: "completed-session",
+      status: "completed",
+      startedAt: "2026-06-20T00:00:00.000Z",
+    });
+    const inProgressSession = createWorkoutSession({
+      id: "draft-session",
+      status: "in_progress",
+      startedAt: "2026-06-21T00:00:00.000Z",
+      endedAt: null,
+      durationSeconds: 0,
+      completedSetCount: 0,
+      volumeKg: 0,
+    });
+    const discardedSession = createWorkoutSession({
+      id: "discarded-session",
+      status: "discarded",
+      startedAt: "2026-06-22T00:00:00.000Z",
+      completedSetCount: 0,
+      volumeKg: 0,
+    });
+
+    try {
+      await saveWorkoutSession(completedSession, db);
+      await saveWorkoutSession(inProgressSession, db);
+      await saveWorkoutSession(discardedSession, db);
+      await saveSetLog(
+        createSetLog({
+          id: "completed-set",
+          sessionId: "completed-session",
+          completed: true,
+          completedAt: "2026-06-20T00:10:00.000Z",
+        }),
+        db,
+      );
+      await saveSetLog(
+        createSetLog({
+          id: "completed-session-incomplete-set",
+          sessionId: "completed-session",
+          completed: false,
+          completedAt: null,
+        }),
+        db,
+      );
+      await saveSetLog(
+        createSetLog({
+          id: "draft-set",
+          sessionId: "draft-session",
+          completed: true,
+          completedAt: "2026-06-21T00:10:00.000Z",
+        }),
+        db,
+      );
+      await saveSetLog(
+        createSetLog({
+          id: "discarded-set",
+          sessionId: "discarded-session",
+          completed: true,
+          completedAt: "2026-06-22T00:10:00.000Z",
+        }),
+        db,
+      );
+
+      expect((await listCompletedWorkoutSessions(db)).map((session) => session.id)).toEqual([
+        "completed-session",
+      ]);
+      expect((await listCompletedProgressSetLogs(db)).map((setLog) => setLog.id)).toEqual([
+        "completed-set",
+      ]);
     } finally {
       db.close();
       await db.delete();

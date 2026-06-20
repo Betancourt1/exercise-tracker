@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildProgressAnalytics,
   calculateAdherence,
   calculateEstimatedOneRepMax,
   calculatePrsByExercise,
   calculateSessionVolume,
   calculateSetVolume,
 } from "./analytics";
+import type { SetLog, WorkoutSession } from "./types";
 
 describe("analytics helpers", () => {
   it("calculates set volume only for completed valid sets", () => {
@@ -91,4 +93,147 @@ describe("analytics helpers", () => {
       percentage: 0,
     });
   });
+
+  it("builds progress only from completed sessions and valid completed sets", () => {
+    const analytics = buildProgressAnalytics({
+      sessions: [
+        createSession({
+          id: "session-completed",
+          status: "completed",
+          startedAt: "2026-06-20T00:00:00.000Z",
+        }),
+        createSession({
+          id: "session-draft",
+          status: "in_progress",
+          startedAt: "2026-06-21T00:00:00.000Z",
+          endedAt: null,
+        }),
+        createSession({
+          id: "session-discarded",
+          status: "discarded",
+          startedAt: "2026-06-22T00:00:00.000Z",
+        }),
+      ],
+      setLogs: [
+        createSetLog({
+          id: "completed-set",
+          sessionId: "session-completed",
+          completed: true,
+          weightKg: 100,
+          reps: 5,
+        }),
+        createSetLog({
+          id: "invalid-set",
+          sessionId: "session-completed",
+          completed: true,
+          weightKg: null,
+          reps: 5,
+        }),
+        createSetLog({
+          id: "incomplete-set",
+          sessionId: "session-completed",
+          completed: false,
+          weightKg: 120,
+          reps: 5,
+        }),
+        createSetLog({
+          id: "draft-set",
+          sessionId: "session-draft",
+          completed: true,
+          weightKg: 200,
+          reps: 5,
+        }),
+        createSetLog({
+          id: "discarded-set",
+          sessionId: "session-discarded",
+          completed: true,
+          weightKg: 300,
+          reps: 5,
+        }),
+      ],
+    });
+
+    expect(analytics.completedSessionCount).toBe(1);
+    expect(analytics.completedSetCount).toBe(1);
+    expect(analytics.totalVolumeKg).toBe(500);
+    expect(analytics.exercisePrCount).toBe(1);
+    expect(analytics.recentSessions).toEqual([
+      expect.objectContaining({
+        sessionId: "session-completed",
+        completedSetCount: 1,
+        volumeKg: 500,
+      }),
+    ]);
+    expect(analytics.volumeTrend).toEqual([
+      expect.objectContaining({
+        sessionId: "session-completed",
+        volumeKg: 500,
+      }),
+    ]);
+    expect(analytics.exerciseDetails).toHaveLength(1);
+    expect(analytics.exerciseDetails[0]).toMatchObject({
+      exerciseId: "sentadilla",
+      bestEstimatedOneRepMax: 116.66666666666667,
+      bestWeightKg: 100,
+      bestWeightReps: 5,
+    });
+  });
 });
+
+function createSession(overrides: Partial<WorkoutSession> = {}): WorkoutSession {
+  return {
+    id: "session-1",
+    status: "completed",
+    source: "routine",
+    routineId: "routine-1",
+    routineRevisionId: null,
+    routineNameSnapshot: "Fuerza",
+    routineDayLabelSnapshot: "Lunes",
+    startedAt: "2026-06-20T00:00:00.000Z",
+    endedAt: "2026-06-20T01:00:00.000Z",
+    durationSeconds: 3600,
+    pausedSeconds: 0,
+    notes: "",
+    createdAt: "2026-06-20T00:00:00.000Z",
+    updatedAt: "2026-06-20T01:00:00.000Z",
+    completedSetCount: 1,
+    volumeKg: 500,
+    prCount: 0,
+    ...overrides,
+  };
+}
+
+function createSetLog(overrides: Partial<SetLog> = {}): SetLog {
+  return {
+    id: "set-1",
+    sessionId: "session-1",
+    exerciseId: "sentadilla",
+    routineExerciseId: "routine-exercise-1",
+    exerciseNameSnapshot: "Sentadilla",
+    guideSnapshot: {
+      id: "sentadilla",
+      name: "Sentadilla",
+      guide: {
+        setup: ["Barra estable."],
+        technique: ["Baja con control."],
+        commonMistakes: ["Perder postura."],
+      },
+    },
+    setIndex: 1,
+    weightKg: 100,
+    reps: 5,
+    rir: 2,
+    completed: true,
+    completedAt: "2026-06-20T00:10:00.000Z",
+    targetSnapshot: {
+      sortOrder: 1,
+      targetSets: 4,
+      targetRepsMin: 5,
+      targetRepsMax: 8,
+      targetRir: 2,
+      restSeconds: 120,
+    },
+    notes: "",
+    ...overrides,
+  };
+}

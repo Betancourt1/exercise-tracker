@@ -1445,6 +1445,363 @@ input:focus-visible {
   min-height: 124px;
 }
 
+.progress-page {
+  max-width: 1180px;
+}
+
+.progress-metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.progress-panel-icon,
+.progress-empty-panel svg {
+  color: var(--progress);
+}
+
+.progress-empty-panel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-height: 240px;
+  text-align: center;
+}
+
+.progress-empty-panel strong {
+  font-size: 15px;
+}
+
+.progress-empty-panel p {
+  max-width: 460px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.progress-help-strip,
+.progress-formula-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-color: #cde6e3;
+  background: var(--progress-soft);
+}
+
+.progress-help-strip strong,
+.progress-formula-help strong {
+  flex: 0 0 auto;
+  color: var(--progress);
+  font-size: 13px;
+}
+
+.progress-help-strip span,
+.progress-formula-help span {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.progress-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.progress-main-column,
+.progress-side-column {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.progress-chart-panel,
+.progress-sessions-panel,
+.progress-exercise-selector,
+.progress-exercise-detail,
+.progress-guide-panel {
+  min-width: 0;
+}
+
+.progress-volume-chart {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
+  align-items: end;
+  gap: 10px;
+  height: 220px;
+  margin-top: 18px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  padding: 8px 8px 0;
+}
+
+.progress-volume-point,
+.progress-estimate-point {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  align-items: end;
+  height: 100%;
+  min-width: 0;
+}
+
+.progress-volume-point strong {
+  overflow: hidden;
+  width: 100%;
+  color: var(--text);
+  font-size: 11px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-volume-point span,
+.progress-estimate-point span {
+  display: block;
+  width: 100%;
+  max-width: 34px;
+  border-radius: 6px 6px 0 0;
+  background: var(--progress);
+}
+
+.progress-volume-point small,
+.progress-estimate-point small {
+  overflow: hidden;
+  width: 100%;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-session-list {
+  display: grid;
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.progress-session-head,
+.progress-session-row {
+  display: grid;
+  grid-template-columns:
+    minmax(92px, 0.75fr) minmax(150px, 1.35fr) minmax(72px, 0.55fr)
+    minmax(82px, 0.65fr) minmax(58px, 0.45fr) minmax(48px, 0.35fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.progress-session-head {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.progress-session-row {
+  min-height: 46px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.progress-session-row:last-child {
+  border-bottom: 0;
+}
+
+.progress-session-row strong {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-session-row span {
+  min-width: 0;
+}
+
+.progress-exercise-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.progress-exercise-list button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  min-height: 50px;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.progress-exercise-list button:hover,
+.progress-exercise-list button[data-active="true"] {
+  background: var(--surface-muted);
+}
+
+.progress-exercise-list button[data-active="true"] {
+  border-left-color: var(--progress);
+}
+
+.progress-exercise-list strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-exercise-list span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-mini-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.progress-mini-metrics div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.progress-mini-metrics span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.progress-mini-metrics strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-estimate-chart {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+  align-items: end;
+  gap: 7px;
+  height: 132px;
+  margin-top: 16px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  padding: 8px 6px 0;
+}
+
+.progress-estimate-point span {
+  max-width: 20px;
+  background: var(--training);
+}
+
+.progress-set-history {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.progress-set-history > strong,
+.progress-guide-block strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.progress-set-row {
+  display: grid;
+  grid-template-columns: minmax(58px, 0.7fr) minmax(92px, 1fr) minmax(56px, 0.6fr) minmax(54px, 0.55fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.progress-set-row strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.progress-guide-content,
+.progress-guide-block,
+.progress-guide-block ul {
+  display: grid;
+  gap: 8px;
+}
+
+.progress-guide-content {
+  margin-top: 12px;
+}
+
+.progress-guide-block ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress-guide-block li {
+  display: flex;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.progress-guide-block li::before {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 auto;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--progress);
+  content: "";
+}
+
+.progress-target-note {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  border: 1px solid #cfe0ff;
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--training-soft);
+  color: var(--training);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.progress-target-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
 .settings-list {
   display: grid;
   gap: 10px;
@@ -1579,6 +1936,7 @@ input:focus-visible {
   .today-grid,
   .split-grid,
   .progress-layout,
+  .progress-main-grid,
   .metric-grid {
     grid-template-columns: 1fr;
   }
@@ -1743,6 +2101,41 @@ input:focus-visible {
     height: 158px;
     gap: 8px;
     padding-right: 10px;
+  }
+
+  .progress-help-strip,
+  .progress-formula-help {
+    flex-direction: column;
+  }
+
+  .progress-volume-chart {
+    grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
+    height: 170px;
+    gap: 8px;
+  }
+
+  .progress-session-head {
+    display: none;
+  }
+
+  .progress-session-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 5px;
+    padding: 12px;
+  }
+
+  .progress-session-row strong {
+    white-space: normal;
+  }
+
+  .progress-mini-metrics,
+  .progress-set-row {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-estimate-chart {
+    height: 112px;
   }
 
   .mobile-nav {
