@@ -15,6 +15,8 @@ export type RoutineGraph = {
   routineRevision: RoutineRevision;
 };
 
+export type RoutineGraphDraft = Omit<RoutineGraph, "routineRevision">;
+
 export type ManualOrderUpdate = {
   routineId: string;
   manualOrder: number;
@@ -126,6 +128,46 @@ export async function saveRoutineGraph(
       await db.routineDays.bulkPut(graph.routineDays);
       await db.routineExercises.bulkPut(graph.routineExercises);
       await db.routineRevisions.put(graph.routineRevision);
+    },
+  );
+}
+
+export async function saveRoutineGraphRevision(
+  graph: RoutineGraphDraft,
+  savedAt = toIsoUtc(),
+  db: WorkoutDatabase = appDb,
+): Promise<string> {
+  return db.transaction(
+    "rw",
+    db.routines,
+    db.routineDays,
+    db.routineExercises,
+    db.routineRevisions,
+    async () => {
+      const routine: Routine = {
+        ...graph.routine,
+        updatedAt: savedAt,
+      };
+      const existingDays = await db.routineDays.where("routineId").equals(routine.id).toArray();
+      const routineDayIds = [
+        ...new Set([
+          ...existingDays.map((routineDay) => routineDay.id),
+          ...graph.routineDays.map((routineDay) => routineDay.id),
+        ]),
+      ];
+
+      await db.routines.put(routine);
+      await db.routineDays.bulkPut(graph.routineDays);
+
+      if (routineDayIds.length > 0) {
+        await db.routineExercises.where("routineDayId").anyOf(routineDayIds).delete();
+      }
+
+      if (graph.routineExercises.length > 0) {
+        await db.routineExercises.bulkPut(graph.routineExercises);
+      }
+
+      return createRoutineRevisionWindow(routine, savedAt, db);
     },
   );
 }

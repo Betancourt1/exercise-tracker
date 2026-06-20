@@ -698,6 +698,297 @@ input:focus-visible {
   line-height: 1.45;
 }
 
+.routine-builder-card {
+  display: grid;
+  gap: 16px;
+  width: min(1120px, 100%);
+}
+
+.routine-builder-layout {
+  display: grid;
+  grid-template-columns: minmax(146px, 0.55fr) minmax(0, 1.35fr) minmax(260px, 0.9fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.builder-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.builder-editor,
+.builder-library {
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+}
+
+.builder-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.builder-section-header h3,
+.builder-guide h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.builder-section-header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.builder-section-header span {
+  border-radius: 999px;
+  background: var(--surface-muted);
+  padding: 4px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.builder-day-list,
+.builder-exercise-list,
+.exercise-library-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.builder-day-list button,
+.library-main-button,
+.builder-exercise-title button {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.builder-day-list button {
+  display: grid;
+  gap: 3px;
+  min-height: 48px;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.builder-day-list button:hover,
+.builder-day-list button[data-active="true"] {
+  background: var(--surface-muted);
+}
+
+.builder-day-list button[data-active="true"] {
+  border-left-color: var(--routine);
+}
+
+.builder-day-list strong,
+.library-main-button strong,
+.builder-exercise-title strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builder-day-list span,
+.library-main-button span,
+.builder-exercise-title span,
+.builder-muscle-copy {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+}
+
+.builder-exercise-row {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.builder-exercise-title,
+.exercise-library-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.builder-exercise-title button,
+.library-main-button {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 auto;
+}
+
+.builder-row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.builder-target-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.builder-number-field,
+.builder-notes-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.builder-number-field input,
+.builder-notes-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.builder-notes-field {
+  grid-column: span 2;
+}
+
+.builder-search {
+  width: 100%;
+  min-width: 0;
+}
+
+.exercise-library-list {
+  max-height: 242px;
+  overflow-y: auto;
+}
+
+.exercise-library-row {
+  align-items: center;
+  min-height: 46px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.exercise-library-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.library-main-button {
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.library-main-button:hover,
+.library-main-button[data-active="true"] {
+  background: var(--surface-muted);
+}
+
+.builder-guide {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.builder-muscle-copy {
+  margin: 0;
+}
+
+.builder-guide-list {
+  display: grid;
+  gap: 5px;
+}
+
+.builder-guide-list strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.builder-guide-list ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.builder-guide-list li {
+  display: flex;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.builder-guide-list li::before {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 auto;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--progress);
+  content: "";
+}
+
+.builder-empty-state {
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  place-items: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 16px;
+  background: #fbfbfb;
+  text-align: center;
+}
+
+.builder-empty-state strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.builder-empty-state p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.builder-actions {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
 .form-error {
   margin: 0;
   color: var(--danger);
@@ -1051,6 +1342,34 @@ input:focus-visible {
     flex-direction: column;
   }
 
+  .routine-builder-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-editor,
+  .builder-library {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+    padding-top: 14px;
+    padding-left: 0;
+  }
+
+  .builder-day-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .builder-target-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .builder-notes-field {
+    grid-column: 1 / -1;
+  }
+
+  .exercise-library-list {
+    max-height: none;
+  }
+
   .day-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1136,5 +1455,19 @@ input:focus-visible {
   .empty-row {
     padding-right: 10px;
     padding-left: 10px;
+  }
+
+  .builder-day-list,
+  .builder-target-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-exercise-title {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .builder-row-actions {
+    justify-content: flex-start;
   }
 }

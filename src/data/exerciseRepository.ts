@@ -1,6 +1,7 @@
 import type { Exercise } from "../domain/types";
 import { toIsoUtc } from "../domain/utils";
 import { appDb, type WorkoutDatabase } from "./db";
+import { seedExerciseLibrary } from "./seedExercises";
 
 export async function listExercises(db: WorkoutDatabase = appDb): Promise<Exercise[]> {
   return db.exercises.orderBy("nameNormalized").toArray();
@@ -11,6 +12,13 @@ export async function listAvailableExercises(
 ): Promise<Exercise[]> {
   const exercises = await db.exercises.orderBy("nameNormalized").toArray();
   return exercises.filter((exercise) => exercise.archivedAt === null);
+}
+
+export async function listSeededAvailableExercises(
+  db: WorkoutDatabase = appDb,
+): Promise<Exercise[]> {
+  await seedExerciseLibrary(db);
+  return listAvailableExercises(db);
 }
 
 export async function getExercise(

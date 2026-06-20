@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  Pencil,
   Plus,
   RotateCcw,
   Search,
@@ -18,6 +19,7 @@ import {
   updateRoutineManualOrders,
 } from "../../data";
 import type { RoutineStatus } from "../../domain";
+import { RoutineBuilderDialog } from "./RoutineBuilderDialog";
 import { buildRoutineGraph, ROUTINE_DAY_OPTIONS } from "./routineBuilders";
 import { loadRoutineSummaries } from "./routineQueries";
 import type { RoutineSummary } from "./types";
@@ -53,6 +55,7 @@ export function RoutinesPage({ onRoutinesChanged }: RoutinesPageProps) {
   const [formState, setFormState] = useState<RoutineFormState>(initialFormState);
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RoutineSummary | null>(null);
+  const [builderTarget, setBuilderTarget] = useState<RoutineSummary | null>(null);
   const [deletedRoutine, setDeletedRoutine] = useState<DeletedRoutineToast | null>(null);
   const [isOrderMode, setIsOrderMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -185,6 +188,12 @@ export function RoutinesPage({ onRoutinesChanged }: RoutinesPageProps) {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleBuilderSaved() {
+    setBuilderTarget(null);
+    await refreshRoutines();
+    onRoutinesChanged?.();
   }
 
   function startOrderMode() {
@@ -327,6 +336,7 @@ export function RoutinesPage({ onRoutinesChanged }: RoutinesPageProps) {
                 canMoveUp={index > 0}
                 canMoveDown={index < visibleSummaries.length - 1}
                 onMove={moveRoutine}
+                onEdit={setBuilderTarget}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -354,6 +364,14 @@ export function RoutinesPage({ onRoutinesChanged }: RoutinesPageProps) {
         />
       ) : null}
 
+      {builderTarget ? (
+        <RoutineBuilderDialog
+          summary={builderTarget}
+          onClose={() => setBuilderTarget(null)}
+          onSaved={handleBuilderSaved}
+        />
+      ) : null}
+
       {deletedRoutine ? (
         <div className="toast" role="status">
           <span>{deletedRoutine.name} eliminada.</span>
@@ -373,6 +391,7 @@ function RoutineRow({
   canMoveUp,
   canMoveDown,
   onMove,
+  onEdit,
   onDelete,
 }: {
   summary: RoutineSummary;
@@ -381,6 +400,7 @@ function RoutineRow({
   canMoveUp: boolean;
   canMoveDown: boolean;
   onMove: (index: number, direction: -1 | 1) => void;
+  onEdit: (summary: RoutineSummary) => void;
   onDelete: (summary: RoutineSummary) => void;
 }) {
   const routine = summary.routine;
@@ -421,14 +441,26 @@ function RoutineRow({
             </button>
           </>
         ) : (
-          <button
-            className="icon-button danger"
-            type="button"
-            aria-label={`Eliminar ${routine.name}`}
-            onClick={() => onDelete(summary)}
-          >
-            <Trash2 size={16} />
-          </button>
+          <>
+            <button
+              className="icon-button"
+              type="button"
+              title="Editar rutina"
+              aria-label={`Editar ${routine.name}`}
+              onClick={() => onEdit(summary)}
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              className="icon-button danger"
+              type="button"
+              title="Eliminar rutina"
+              aria-label={`Eliminar ${routine.name}`}
+              onClick={() => onDelete(summary)}
+            >
+              <Trash2 size={16} />
+            </button>
+          </>
         )}
       </div>
     </div>
@@ -517,8 +549,7 @@ function CreateRoutineDialog({
         <div className="constructor-placeholder">
           <p className="panel-label">Constructor</p>
           <p>
-            Constructor de ejercicios en preparación. Esta rutina queda lista con días activos y
-            revisión inicial.
+            Después de guardar, abre Editar para agregar ejercicios y objetivos por día.
           </p>
         </div>
 

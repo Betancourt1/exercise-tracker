@@ -14,6 +14,7 @@ import {
   archiveExercise,
   ensureSettings,
   getSettings,
+  listSeededAvailableExercises,
   listActiveRoutines,
   listAvailableExercises,
   listExercises,
@@ -27,6 +28,7 @@ import {
   saveSetLog,
   saveSettings,
   saveRoutineGraph,
+  saveRoutineGraphRevision,
   saveWorkoutSession,
   softDeleteRoutine,
   restoreRoutine,
@@ -113,6 +115,79 @@ describe("data repositories", () => {
         id: "routine-revision-1",
         effectiveTo: null,
       });
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("saves edited routine graph with a new revision snapshot", async () => {
+    const db = new WorkoutDatabase(`test-edited-routine-graph-${crypto.randomUUID()}`);
+    const savedAt = "2026-06-22T00:00:00.000Z";
+    const routine = createRoutine();
+    const routineDay = createRoutineDay();
+    const originalRoutineExercise = createRoutineExercise();
+    const nextRoutineExercise: RoutineExercise = {
+      ...createRoutineExercise(),
+      id: "routine-exercise-2",
+      targetSets: 5,
+      sortOrder: 1,
+      notes: "Mantener técnica limpia.",
+    };
+    const routineRevision = createRoutineRevision(
+      routine,
+      routineDay,
+      originalRoutineExercise,
+    );
+
+    try {
+      await saveRoutineGraph(
+        {
+          routine,
+          routineDays: [routineDay],
+          routineExercises: [originalRoutineExercise],
+          routineRevision,
+        },
+        db,
+      );
+
+      await saveRoutineGraphRevision(
+        {
+          routine,
+          routineDays: [routineDay],
+          routineExercises: [nextRoutineExercise],
+        },
+        savedAt,
+        db,
+      );
+
+      const routineExercises = await db.routineExercises.toArray();
+      const revisions = await db.routineRevisions
+        .where("routineId")
+        .equals("routine-1")
+        .toArray();
+      const activeRevision = revisions.find((revision) => revision.effectiveTo === null);
+
+      expect(routineExercises.map((routineExercise) => routineExercise.id)).toEqual([
+        "routine-exercise-2",
+      ]);
+      expect(await db.routineRevisions.get("routine-revision-1")).toMatchObject({
+        effectiveTo: savedAt,
+      });
+      expect(revisions).toHaveLength(2);
+      expect(activeRevision).toMatchObject({
+        revisionNumber: 2,
+        effectiveFrom: savedAt,
+        effectiveTo: null,
+      });
+      expect(activeRevision?.snapshot.routine.updatedAt).toBe(savedAt);
+      expect(activeRevision?.snapshot.routineExercises).toMatchObject([
+        {
+          id: "routine-exercise-2",
+          targetSets: 5,
+          notes: "Mantener técnica limpia.",
+        },
+      ]);
     } finally {
       db.close();
       await db.delete();
@@ -258,6 +333,27 @@ describe("data repositories", () => {
       expect(new Set(manualOrders).size).toBe(manualOrders.length);
       expect(activeRoutines.map((routine) => routine.id)).toEqual(["routine-2", "routine-1"]);
       expect(activeRoutines.find((routine) => routine.id === "routine-1")?.manualOrder).toBe(2);
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("loads seeded available exercises through the exercise repository", async () => {
+    const db = new WorkoutDatabase(`test-seeded-exercise-repository-${crypto.randomUUID()}`);
+
+    try {
+      const exercises = await listSeededAvailableExercises(db);
+
+      expect(exercises.map((exercise) => exercise.name)).toEqual([
+        "Peso muerto rumano",
+        "Press banca",
+        "Press militar",
+        "Remo con barra",
+        "Sentadilla",
+        "Zancadas",
+      ]);
+      expect(exercises.every((exercise) => exercise.archivedAt === null)).toBe(true);
     } finally {
       db.close();
       await db.delete();
