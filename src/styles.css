@@ -379,6 +379,16 @@ input:focus-visible {
   gap: 10px;
 }
 
+.toolbar-count {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .search-box input {
   width: 100%;
   min-width: 0;
@@ -1430,6 +1440,71 @@ input:focus-visible {
     var(--surface);
 }
 
+.exercise-library-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.exercise-library-panel .panel-header {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.exercise-browser-list {
+  display: grid;
+  max-height: 620px;
+  overflow: auto;
+}
+
+.exercise-browser-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.1fr) minmax(130px, 0.85fr) minmax(110px, 0.8fr) minmax(120px, 0.8fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 54px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.exercise-browser-row:hover,
+.exercise-browser-row[data-active="true"] {
+  background: var(--routine-soft);
+}
+
+.exercise-browser-row strong,
+.exercise-browser-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exercise-browser-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.exercise-guide-block {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.exercise-guide-block > strong {
+  font-size: 12px;
+}
+
+.exercise-guide-block .guide-list {
+  margin: 0;
+}
+
 .guide-list {
   display: grid;
   gap: 8px;
@@ -2117,6 +2192,20 @@ input:focus-visible {
   .secondary-button,
   .primary-button {
     width: 100%;
+  }
+
+  .toolbar-count {
+    width: fit-content;
+  }
+
+  .exercise-library-panel {
+    padding: 0;
+  }
+
+  .exercise-browser-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    min-height: 0;
   }
 
   .routine-table-head {

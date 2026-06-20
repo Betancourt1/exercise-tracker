@@ -24,10 +24,12 @@ import type { WorkoutStartRequest } from "./features/workout/types";
 import {
   exportDatabaseJson,
   getLatestInProgressWorkoutDraft,
+  listSeededAvailableExercises,
   replaceDatabaseFromExportWithBackup,
   stringifyDatabaseExport,
 } from "./data";
 import type { DatabaseExport } from "./data";
+import type { Exercise } from "./domain";
 
 type PageId = "today" | "routines" | "exercises" | "progress" | "settings" | "workout";
 
@@ -448,6 +450,71 @@ function TodayPage({
 }
 
 function ExercisesPage() {
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function loadExercises() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const seededExercises = await listSeededAvailableExercises();
+        if (!isCurrent) {
+          return;
+        }
+
+        setExercises(seededExercises);
+        setSelectedExerciseId((currentId) => currentId ?? seededExercises[0]?.id ?? null);
+      } catch {
+        if (isCurrent) {
+          setError("No se pudo cargar la biblioteca local de ejercicios.");
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadExercises();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  const filteredExercises = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase("es-MX");
+
+    if (!query) {
+      return exercises;
+    }
+
+    return exercises.filter((exercise) => {
+      const searchText = [
+        exercise.name,
+        ...exercise.primaryMuscles,
+        ...exercise.secondaryMuscles,
+        ...exercise.equipment,
+        ...exercise.tags,
+      ]
+        .join(" ")
+        .toLocaleLowerCase("es-MX");
+
+      return searchText.includes(query);
+    });
+  }, [exercises, searchQuery]);
+  const selectedExercise =
+    exercises.find((exercise) => exercise.id === selectedExerciseId) ??
+    filteredExercises[0] ??
+    null;
+
   return (
     <section className="page-section">
       <PageTitle kicker="Ejercicios" title="Biblioteca de ejercicios" />
@@ -455,37 +522,93 @@ function ExercisesPage() {
       <div className="toolbar">
         <label className="search-box">
           <Search size={15} />
-          <input placeholder="Buscar ejercicio" aria-label="Buscar ejercicio" />
+          <input
+            placeholder="Buscar ejercicio"
+            aria-label="Buscar ejercicio"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
         </label>
-        <button className="secondary-button" type="button">
-          Grupo muscular
-        </button>
+        <span className="toolbar-count">{filteredExercises.length} ejercicios</span>
       </div>
 
+      {error ? <p className="form-error">{error}</p> : null}
+
       <div className="split-grid">
-        <article className="panel">
+        <article className="panel exercise-library-panel">
           <div className="panel-header">
             <div>
               <p className="panel-label">Movimientos</p>
-              <h2>Sin ejercicios cargados</h2>
+              <h2>{isLoading ? "Cargando ejercicios" : "Biblioteca local"}</h2>
             </div>
           </div>
-          <EmptyRows
-            rows={4}
-            labels={["Nombre", "Equipo", "Músculos", "Etiquetas"]}
-          />
+          {isLoading ? (
+            <EmptyRows rows={4} labels={["Nombre", "Equipo", "Músculos", "Etiquetas"]} />
+          ) : filteredExercises.length > 0 ? (
+            <div className="exercise-browser-list">
+              {filteredExercises.map((exercise) => (
+                <button
+                  className="exercise-browser-row"
+                  data-active={exercise.id === selectedExercise?.id}
+                  type="button"
+                  key={exercise.id}
+                  onClick={() => setSelectedExerciseId(exercise.id)}
+                >
+                  <strong>{exercise.name}</strong>
+                  <span>{exercise.primaryMuscles.join(", ")}</span>
+                  <span>{exercise.equipment.join(", ")}</span>
+                  <span>{exercise.tags.slice(0, 3).join(", ")}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Sin resultados"
+              body="Ajusta la búsqueda por nombre, músculo, equipo o etiqueta."
+            />
+          )}
         </article>
-        <article className="panel guide-card">
-          <p className="panel-label">Guía</p>
-          <h2>Elige un ejercicio</h2>
-          <p className="muted">
-            Aquí vivirán las indicaciones de técnica, errores comunes y recordatorios
-            breves.
-          </p>
-          <GuideList />
-        </article>
+        <ExerciseGuideCard exercise={selectedExercise} />
       </div>
     </section>
+  );
+}
+
+function ExerciseGuideCard({ exercise }: { exercise: Exercise | null }) {
+  if (!exercise) {
+    return (
+      <article className="panel guide-card">
+        <p className="panel-label">Guía</p>
+        <h2>Elige un ejercicio</h2>
+        <p className="muted">Selecciona un movimiento para ver indicaciones breves.</p>
+        <GuideList />
+      </article>
+    );
+  }
+
+  return (
+    <article className="panel guide-card">
+      <p className="panel-label">Guía</p>
+      <h2>{exercise.name}</h2>
+      <p className="muted">
+        {exercise.primaryMuscles.join(", ")}
+        {exercise.secondaryMuscles.length > 0
+          ? ` · ${exercise.secondaryMuscles.join(", ")}`
+          : ""}
+      </p>
+      <GuideBlock title="Preparación" items={exercise.guide.setup} />
+      <GuideBlock title="Técnica" items={exercise.guide.technique} />
+      <GuideBlock title="Errores comunes" items={exercise.guide.commonMistakes} />
+    </article>
+  );
+}
+
+function GuideBlock({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="exercise-guide-block">
+      <strong>{title}</strong>
+      <GuideList items={items} />
+    </div>
   );
 }
 
