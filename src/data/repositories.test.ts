@@ -1,7 +1,15 @@
 import "fake-indexeddb/auto";
 
 import { describe, expect, it } from "vitest";
-import type { Exercise, Routine, RoutineDay, RoutineExercise, SetLog, WorkoutSession } from "../domain";
+import type {
+  Exercise,
+  Routine,
+  RoutineDay,
+  RoutineExercise,
+  RoutineRevision,
+  SetLog,
+  WorkoutSession,
+} from "../domain";
 import {
   archiveExercise,
   ensureSettings,
@@ -18,8 +26,10 @@ import {
   saveRoutineExercise,
   saveSetLog,
   saveSettings,
+  saveRoutineGraph,
   saveWorkoutSession,
   softDeleteRoutine,
+  restoreRoutine,
   WorkoutDatabase,
 } from "./index";
 
@@ -67,6 +77,126 @@ describe("data repositories", () => {
       const defaultSettings = await ensureSettings(db);
       await saveSettings({ ...defaultSettings, unitSystem: "imperial" }, db);
       expect((await getSettings(db)).unitSystem).toBe("imperial");
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("saves routine graph atomically", async () => {
+    const db = new WorkoutDatabase(`test-routine-graph-${crypto.randomUUID()}`);
+    const routine = createRoutine();
+    const routineDay = createRoutineDay();
+    const routineExercise = createRoutineExercise();
+    const routineRevision = createRoutineRevision(routine, routineDay, routineExercise);
+
+    try {
+      await saveRoutineGraph(
+        {
+          routine,
+          routineDays: [routineDay],
+          routineExercises: [routineExercise],
+          routineRevision,
+        },
+        db,
+      );
+
+      expect(await db.routines.get("routine-1")).toMatchObject({ id: "routine-1" });
+      expect(await db.routineDays.get("routine-day-1")).toMatchObject({
+        id: "routine-day-1",
+      });
+      expect(await db.routineExercises.get("routine-exercise-1")).toMatchObject({
+        id: "routine-exercise-1",
+      });
+      expect(await db.routineRevisions.get("routine-revision-1")).toMatchObject({
+        id: "routine-revision-1",
+        effectiveTo: null,
+      });
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("soft delete closes the active routine revision", async () => {
+    const db = new WorkoutDatabase(`test-soft-delete-routine-${crypto.randomUUID()}`);
+    const deletedAt = "2026-06-21T00:00:00.000Z";
+    const routine = createRoutine();
+    const routineDay = createRoutineDay();
+    const routineExercise = createRoutineExercise();
+    const routineRevision = createRoutineRevision(routine, routineDay, routineExercise);
+
+    try {
+      await saveRoutineGraph(
+        {
+          routine,
+          routineDays: [routineDay],
+          routineExercises: [routineExercise],
+          routineRevision,
+        },
+        db,
+      );
+
+      await softDeleteRoutine("routine-1", deletedAt, db);
+
+      expect(await db.routines.get("routine-1")).toMatchObject({
+        status: "deleted",
+        deletedAt,
+        previousStatus: "active",
+      });
+      expect(await db.routineRevisions.get("routine-revision-1")).toMatchObject({
+        effectiveTo: deletedAt,
+      });
+    } finally {
+      db.close();
+      await db.delete();
+    }
+  });
+
+  it("restore routine creates a new active revision window", async () => {
+    const db = new WorkoutDatabase(`test-restore-routine-${crypto.randomUUID()}`);
+    const deletedAt = "2026-06-21T00:00:00.000Z";
+    const restoredAt = "2026-06-22T00:00:00.000Z";
+    const routine = createRoutine();
+    const routineDay = createRoutineDay();
+    const routineExercise = createRoutineExercise();
+    const routineRevision = createRoutineRevision(routine, routineDay, routineExercise);
+
+    try {
+      await saveRoutineGraph(
+        {
+          routine,
+          routineDays: [routineDay],
+          routineExercises: [routineExercise],
+          routineRevision,
+        },
+        db,
+      );
+
+      await softDeleteRoutine("routine-1", deletedAt, db);
+      await restoreRoutine("routine-1", restoredAt, db);
+
+      const restoredRoutine = await db.routines.get("routine-1");
+      const revisions = await db.routineRevisions
+        .where("routineId")
+        .equals("routine-1")
+        .toArray();
+      const activeRevision = revisions.find((revision) => revision.effectiveTo === null);
+
+      expect(restoredRoutine).toMatchObject({
+        status: "active",
+        deletedAt: null,
+        previousStatus: null,
+      });
+      expect(revisions).toHaveLength(2);
+      expect(activeRevision).toMatchObject({
+        revisionNumber: 2,
+        effectiveFrom: restoredAt,
+        effectiveTo: null,
+      });
+      expect(activeRevision?.snapshot.routine.status).toBe("active");
+      expect(activeRevision?.snapshot.routineDays).toHaveLength(1);
+      expect(activeRevision?.snapshot.routineExercises).toHaveLength(1);
     } finally {
       db.close();
       await db.delete();
@@ -180,5 +310,24 @@ function createSetLog(): SetLog {
       restSeconds: 120,
     },
     notes: "",
+  };
+}
+
+function createRoutineRevision(
+  routine: Routine,
+  routineDay: RoutineDay,
+  routineExercise: RoutineExercise,
+): RoutineRevision {
+  return {
+    id: "routine-revision-1",
+    routineId: routine.id,
+    revisionNumber: 1,
+    effectiveFrom: "2026-06-20T00:00:00.000Z",
+    effectiveTo: null,
+    snapshot: {
+      routine,
+      routineDays: [routineDay],
+      routineExercises: [routineExercise],
+    },
   };
 }

@@ -183,9 +183,49 @@ function validateRoutineRevisions(records: RoutineRevision[]): string | null {
     if (!isPositiveInteger(record.revisionNumber)) return "revisionNumber no es válido";
     if (!isNonEmptyString(record.effectiveFrom)) return "requiere effectiveFrom";
     if (!isNullableString(record.effectiveTo)) return "effectiveTo debe ser string o null";
-    if (!isRecord(record.snapshot)) return "requiere snapshot";
+    const snapshotError = validateRoutineRevisionSnapshot(record);
+    if (snapshotError) return snapshotError;
     return null;
   });
+}
+
+function validateRoutineRevisionSnapshot(record: RoutineRevision): string | null {
+  if (!isRecord(record.snapshot)) return "requiere snapshot";
+  if (!isRecord(record.snapshot.routine)) return "snapshot.routine no es válido";
+  if (!Array.isArray(record.snapshot.routineDays)) {
+    return "snapshot.routineDays no es válido";
+  }
+  if (!Array.isArray(record.snapshot.routineExercises)) {
+    return "snapshot.routineExercises no es válido";
+  }
+
+  const routineError = validateRoutines([record.snapshot.routine]);
+  if (routineError) return `snapshot.${routineError}`;
+
+  if (record.snapshot.routine.id !== record.routineId) {
+    return "snapshot.routine no coincide con routineId";
+  }
+
+  const routineDaysError = validateRoutineDays(record.snapshot.routineDays);
+  if (routineDaysError) return `snapshot.${routineDaysError}`;
+
+  const routineExercisesError = validateRoutineExercises(record.snapshot.routineExercises);
+  if (routineExercisesError) return `snapshot.${routineExercisesError}`;
+
+  const snapshotDayIds = new Set(record.snapshot.routineDays.map((day) => day.id));
+  for (const routineDay of record.snapshot.routineDays) {
+    if (routineDay.routineId !== record.routineId) {
+      return "snapshot.routineDays apunta a otra rutina";
+    }
+  }
+
+  for (const routineExercise of record.snapshot.routineExercises) {
+    if (!snapshotDayIds.has(routineExercise.routineDayId)) {
+      return "snapshot.routineExercises apunta a un día fuera del snapshot";
+    }
+  }
+
+  return null;
 }
 
 function validateWorkoutSessions(records: WorkoutSession[]): string | null {

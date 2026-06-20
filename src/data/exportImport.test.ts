@@ -10,9 +10,7 @@ import type {
   SetLog,
   WorkoutSession,
 } from "../domain";
-import type {
-  DatabaseExportData,
-} from "./index";
+import type { DatabaseExportData } from "./index";
 import {
   CORE_STORE_NAMES,
   createDatabaseExport,
@@ -100,6 +98,47 @@ describe("database export/import helpers", () => {
       sessionId: "missing-session",
     };
     expect(validateImportPayload(createDatabaseExport(brokenSetReference)).ok).toBe(false);
+  });
+
+  it("rejects invalid routine revision snapshots", () => {
+    const emptySnapshot = createValidExportData();
+    emptySnapshot.routineRevisions[0] = {
+      ...emptySnapshot.routineRevisions[0],
+      snapshot: {} as RoutineRevision["snapshot"],
+    };
+    expect(validateImportPayload(createDatabaseExport(emptySnapshot)).ok).toBe(false);
+
+    const missingNestedRoutine = createValidExportData();
+    missingNestedRoutine.routineRevisions[0] = {
+      ...missingNestedRoutine.routineRevisions[0],
+      snapshot: {
+        ...missingNestedRoutine.routineRevisions[0].snapshot,
+        routine: {} as Routine,
+      },
+    };
+    expect(validateImportPayload(createDatabaseExport(missingNestedRoutine)).ok).toBe(false);
+
+    const missingNestedDayFields = createValidExportData();
+    missingNestedDayFields.routineRevisions[0] = {
+      ...missingNestedDayFields.routineRevisions[0],
+      snapshot: {
+        ...missingNestedDayFields.routineRevisions[0].snapshot,
+        routineDays: [{} as RoutineDay],
+      },
+    };
+    expect(validateImportPayload(createDatabaseExport(missingNestedDayFields)).ok).toBe(false);
+
+    const missingNestedExerciseFields = createValidExportData();
+    missingNestedExerciseFields.routineRevisions[0] = {
+      ...missingNestedExerciseFields.routineRevisions[0],
+      snapshot: {
+        ...missingNestedExerciseFields.routineRevisions[0].snapshot,
+        routineExercises: [{} as RoutineExercise],
+      },
+    };
+    expect(validateImportPayload(createDatabaseExport(missingNestedExerciseFields)).ok).toBe(
+      false,
+    );
   });
 
   it("safe replace returns a backup before replacing data", async () => {

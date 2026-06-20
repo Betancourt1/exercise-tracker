@@ -1,6 +1,19 @@
-import type { Routine, RoutineDay, RoutineExercise, RoutineStatus } from "../domain/types";
-import { toIsoUtc } from "../domain/utils";
+import type {
+  Routine,
+  RoutineDay,
+  RoutineExercise,
+  RoutineRevision,
+  RoutineStatus,
+} from "../domain/types";
+import { createId, toIsoUtc } from "../domain/utils";
 import { appDb, type WorkoutDatabase } from "./db";
+
+export type RoutineGraph = {
+  routine: Routine;
+  routineDays: RoutineDay[];
+  routineExercises: RoutineExercise[];
+  routineRevision: RoutineRevision;
+};
 
 export async function listRoutines(
   options: { includeDeleted?: boolean } = {},
@@ -35,19 +48,25 @@ export async function softDeleteRoutine(
   deletedAt = toIsoUtc(),
   db: WorkoutDatabase = appDb,
 ): Promise<number> {
-  const routine = await db.routines.get(id);
-  if (!routine) {
-    return 0;
-  }
+  return db.transaction("rw", db.routines, db.routineRevisions, async () => {
+    const routine = await db.routines.get(id);
+    if (!routine) {
+      return 0;
+    }
 
-  const previousStatus =
-    routine.status === "deleted" ? routine.previousStatus : toPreviousStatus(routine.status);
+    const previousStatus =
+      routine.status === "deleted" ? routine.previousStatus : toPreviousStatus(routine.status);
 
-  return db.routines.update(id, {
-    status: "deleted",
-    previousStatus,
-    deletedAt,
-    updatedAt: deletedAt,
+    const routineUpdateCount = await db.routines.update(id, {
+      status: "deleted",
+      previousStatus,
+      deletedAt,
+      updatedAt: deletedAt,
+    });
+
+    await closeOpenRoutineRevisions(id, deletedAt, db);
+
+    return routineUpdateCount;
   });
 }
 
@@ -56,16 +75,43 @@ export async function restoreRoutine(
   restoredAt = toIsoUtc(),
   db: WorkoutDatabase = appDb,
 ): Promise<number> {
-  const routine = await db.routines.get(id);
-  if (!routine || routine.status !== "deleted") {
-    return 0;
-  }
+  return db.transaction(
+    "rw",
+    db.routines,
+    db.routineDays,
+    db.routineExercises,
+    db.routineRevisions,
+    async () => {
+      const routine = await db.routines.get(id);
+      if (!routine || routine.status !== "deleted") {
+        return 0;
+      }
 
-  return db.routines.update(id, {
-    status: routine.previousStatus ?? "paused",
-    previousStatus: null,
-    deletedAt: null,
-    updatedAt: restoredAt,
+      const restoredRoutine: Routine = {
+        ...routine,
+        status: routine.previousStatus ?? "paused",
+        previousStatus: null,
+        deletedAt: null,
+        updatedAt: restoredAt,
+      };
+
+      const routineUpdateCount = await db.routines.put(restoredRoutine);
+      await createRoutineRevisionWindow(restoredRoutine, restoredAt, db);
+
+      return routineUpdateCount ? 1 : 0;
+    },
+  );
+}
+
+export async function saveRoutineGraph(
+  graph: RoutineGraph,
+  db: WorkoutDatabase = appDb,
+): Promise<void> {
+  await db.transaction("rw", db.routines, db.routineDays, db.routineExercises, db.routineRevisions, async () => {
+    await db.routines.put(graph.routine);
+    await db.routineDays.bulkPut(graph.routineDays);
+    await db.routineExercises.bulkPut(graph.routineExercises);
+    await db.routineRevisions.put(graph.routineRevision);
   });
 }
 
@@ -105,4 +151,55 @@ export async function saveRoutineExercise(
 
 function toPreviousStatus(status: RoutineStatus): "draft" | "active" | "paused" | null {
   return status === "deleted" ? null : status;
+}
+
+async function closeOpenRoutineRevisions(
+  routineId: string,
+  effectiveTo: string,
+  db: WorkoutDatabase,
+): Promise<number> {
+  return db.routineRevisions
+    .where("routineId")
+    .equals(routineId)
+    .filter((revision) => revision.effectiveTo === null)
+    .modify({ effectiveTo });
+}
+
+async function createRoutineRevisionWindow(
+  routine: Routine,
+  effectiveFrom: string,
+  db: WorkoutDatabase,
+): Promise<string> {
+  await closeOpenRoutineRevisions(routine.id, effectiveFrom, db);
+
+  const existingRevisions = await db.routineRevisions
+    .where("routineId")
+    .equals(routine.id)
+    .toArray();
+  const revisionNumber =
+    existingRevisions.reduce(
+      (highest, revision) => Math.max(highest, revision.revisionNumber),
+      0,
+    ) + 1;
+  const routineDays = await listRoutineDays(routine.id, db);
+  const routineExercises = (
+    await Promise.all(
+      routineDays.map((routineDay) => listRoutineExercisesForDay(routineDay.id, db)),
+    )
+  ).flat();
+  const routineRevision: RoutineRevision = {
+    id: createId(),
+    routineId: routine.id,
+    revisionNumber,
+    effectiveFrom,
+    effectiveTo: null,
+    snapshot: {
+      routine,
+      routineDays,
+      routineExercises,
+    },
+  };
+
+  await db.routineRevisions.put(routineRevision);
+  return routineRevision.id;
 }
