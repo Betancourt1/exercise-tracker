@@ -4158,4 +4158,9 @@ li {
   margin-bottom: 0;
 }
 
+.builder-search {
+  flex: none;
+}
+
+
 
