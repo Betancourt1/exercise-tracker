@@ -980,7 +980,7 @@ li {
   gap: 8px;
   width: 100%;
   padding: 13px;
-  background: var(--surface);
+  background: transparent;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   font-size: 0.9375rem;
@@ -3563,7 +3563,7 @@ li {
   border-left: 3px solid transparent;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
-  background: var(--surface-raised);
+  background: transparent;
   transition: background 0.15s, border-left-color 0.15s;
 }
 
@@ -3853,9 +3853,8 @@ li {
   min-height: 120px;
   padding: 16px;
   text-align: center;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
+  background: none;
+  border: none;
 }
 
 .builder-empty-state strong {
