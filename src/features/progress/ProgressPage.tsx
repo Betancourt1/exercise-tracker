@@ -21,7 +21,7 @@ import type {
   RoutineExerciseTargetSnapshot,
 } from "../../domain";
 import { loadProgressAnalytics } from "./progressQueries";
-import { BodyMuscleMap, ExerciseMotionIllustration } from "../exerciseVisuals";
+import { BodyMuscleMap, ExerciseVideoSnippet } from "../exerciseVisuals";
 
 type ProgressPageProps = {
   onTrain: () => void;
@@ -562,7 +562,7 @@ function ExerciseGuidePanel({
 
       {guideSnapshot ? (
         <div className="progress-guide-content">
-          <ExerciseMotionIllustration
+          <ExerciseVideoSnippet
             exercise={{
               name: guideSnapshot.name,
               primaryMuscles: exercise.primaryMuscles,

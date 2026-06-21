@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { ExternalLink, Video } from "lucide-react";
 import type { ExerciseGuide } from "../domain";
 
 type ExerciseVisualSource = {
@@ -22,16 +22,6 @@ type BodyRegion = {
 };
 
 type RegionState = "inactive" | "primary" | "secondary" | "heat";
-
-type MotionPattern =
-  | "squat"
-  | "hinge"
-  | "lunge"
-  | "push"
-  | "pull"
-  | "core"
-  | "carry"
-  | "isolation";
 
 const FRONT_REGIONS: BodyRegion[] = [
   {
@@ -213,17 +203,6 @@ const BACK_REGIONS: BodyRegion[] = [
   },
 ];
 
-const MOTION_LABELS: Record<MotionPattern, string> = {
-  squat: "Sentadilla / empuje de pierna",
-  hinge: "Bisagra de cadera",
-  lunge: "Trabajo unilateral",
-  push: "Empuje",
-  pull: "Tirón",
-  core: "Estabilidad de core",
-  carry: "Carga y marcha",
-  isolation: "Aislamiento controlado",
-};
-
 export function ExerciseVisualPanel({
   exercise,
   compact = false,
@@ -239,7 +218,7 @@ export function ExerciseVisualPanel({
         secondaryMuscles={exercise.secondaryMuscles ?? []}
         compact={compact}
       />
-      <ExerciseMotionIllustration exercise={exercise} compact={compact} />
+      <ExerciseVideoSnippet exercise={exercise} compact={compact} />
     </div>
   );
 }
@@ -328,28 +307,37 @@ export function BodyMuscleMap({
   );
 }
 
-export function ExerciseMotionIllustration({
+export function ExerciseVideoSnippet({
   exercise,
   compact = false,
 }: {
   exercise: ExerciseVisualSource;
   compact?: boolean;
 }) {
-  const pattern = getMotionPattern(exercise);
-  const steps = getMotionSteps(exercise);
+  const query = buildYoutubeQuery(exercise.name);
+  const searchUrl = buildYoutubeSearchUrl(query);
 
   return (
-    <div className="exercise-motion" data-compact={compact}>
+    <div className="exercise-video-snippet" data-compact={compact}>
       <div className="visual-section-header">
         <strong>Cómo hacerlo</strong>
-        <span>{MOTION_LABELS[pattern]}</span>
+        <span>YouTube</span>
       </div>
-      <MotionFigure pattern={pattern} label={`${exercise.name}: ${MOTION_LABELS[pattern]}`} />
-      <ol className="motion-step-list">
-        {steps.slice(0, compact ? 2 : 3).map((step) => (
-          <li key={step}>{step}</li>
-        ))}
-      </ol>
+      <a className="youtube-snippet-card" href={searchUrl} rel="noreferrer" target="_blank">
+        <span className="youtube-snippet-thumb" aria-hidden="true">
+          <Video size={24} strokeWidth={2.2} />
+          <span>Video</span>
+        </span>
+        <span className="youtube-snippet-copy">
+          <strong>{exercise.name}</strong>
+          <small>Buscar técnica y ejecución en YouTube</small>
+        </span>
+        <ExternalLink size={15} aria-hidden="true" />
+      </a>
+      <p className="youtube-snippet-note">
+        Elige videos que coincidan con tu equipo y mantén cargas conservadoras si estás
+        aprendiendo el movimiento.
+      </p>
     </div>
   );
 }
@@ -374,154 +362,6 @@ function BodyOutline({ offsetX, label }: { offsetX: number; label: string }) {
       <path d={`M${offsetX + 43} 127 L${offsetX + 36} 224`} />
       <path d={`M${offsetX + 67} 127 L${offsetX + 74} 224`} />
     </g>
-  );
-}
-
-function MotionFigure({ pattern, label }: { pattern: MotionPattern; label: string }) {
-  const arrowId = useId().replace(/:/g, "");
-
-  return (
-    <svg className="motion-svg" viewBox="0 0 180 108" role="img" aria-label={label}>
-      <defs>
-        <marker
-          id={`${arrowId}-arrow`}
-          markerHeight="6"
-          markerWidth="6"
-          orient="auto"
-          refX="5"
-          refY="3"
-        >
-          <path d="M0 0 L6 3 L0 6 Z" />
-        </marker>
-      </defs>
-      <MotionShape pattern={pattern} arrowId={`${arrowId}-arrow`} />
-    </svg>
-  );
-}
-
-function MotionShape({
-  pattern,
-  arrowId,
-}: {
-  pattern: MotionPattern;
-  arrowId: string;
-}) {
-  const arrow = `url(#${arrowId})`;
-
-  if (pattern === "squat") {
-    return (
-      <>
-        <path className="motion-floor" d="M28 92 H152" />
-        <circle className="motion-head" cx="48" cy="24" r="7" />
-        <path className="motion-limb" d="M48 32 L48 56 L38 88" />
-        <path className="motion-limb" d="M48 56 L61 88" />
-        <path className="motion-limb" d="M38 45 L58 45" />
-        <circle className="motion-head" cx="118" cy="34" r="7" />
-        <path className="motion-limb strong" d="M118 42 L108 62 L89 86" />
-        <path className="motion-limb strong" d="M108 62 L134 86" />
-        <path className="motion-limb" d="M102 50 L126 50" />
-        <path className="motion-arrow" d="M82 26 C92 42 92 60 84 76" markerEnd={arrow} />
-      </>
-    );
-  }
-
-  if (pattern === "hinge") {
-    return (
-      <>
-        <path className="motion-floor" d="M28 92 H154" />
-        <circle className="motion-head" cx="56" cy="24" r="7" />
-        <path className="motion-limb" d="M56 32 L56 58 L48 90" />
-        <path className="motion-limb" d="M56 58 L67 90" />
-        <circle className="motion-head" cx="118" cy="42" r="7" />
-        <path className="motion-limb strong" d="M112 50 L84 65 L78 90" />
-        <path className="motion-limb strong" d="M84 65 L111 90" />
-        <path className="motion-limb" d="M100 57 L126 72" />
-        <path className="motion-arrow" d="M81 39 C96 32 111 31 128 36" markerEnd={arrow} />
-      </>
-    );
-  }
-
-  if (pattern === "lunge") {
-    return (
-      <>
-        <path className="motion-floor" d="M24 92 H156" />
-        <circle className="motion-head" cx="88" cy="24" r="7" />
-        <path className="motion-limb strong" d="M88 32 L88 55 L63 90" />
-        <path className="motion-limb strong" d="M88 55 L125 90" />
-        <path className="motion-limb" d="M77 45 L101 45" />
-        <path className="motion-arrow" d="M48 76 C62 64 76 58 91 56" markerEnd={arrow} />
-      </>
-    );
-  }
-
-  if (pattern === "push") {
-    return (
-      <>
-        <path className="motion-floor" d="M28 82 H152" />
-        <path className="motion-bench" d="M42 68 H116" />
-        <circle className="motion-head" cx="52" cy="56" r="6" />
-        <path className="motion-limb strong" d="M58 61 L96 67 L126 48" />
-        <path className="motion-limb" d="M74 68 L104 82" />
-        <path className="motion-load" d="M115 46 H146" />
-        <path className="motion-arrow" d="M126 56 C128 46 130 37 133 28" markerEnd={arrow} />
-      </>
-    );
-  }
-
-  if (pattern === "pull") {
-    return (
-      <>
-        <path className="motion-floor" d="M28 90 H152" />
-        <path className="motion-load" d="M38 24 V76" />
-        <circle className="motion-head" cx="118" cy="34" r="7" />
-        <path className="motion-limb" d="M116 42 L106 66 L126 88" />
-        <path className="motion-limb strong" d="M106 55 L61 44" />
-        <path className="motion-limb strong" d="M108 61 L63 58" />
-        <path className="motion-arrow" d="M66 34 C83 36 94 42 105 53" markerEnd={arrow} />
-      </>
-    );
-  }
-
-  if (pattern === "core") {
-    return (
-      <>
-        <path className="motion-floor" d="M28 86 H152" />
-        <circle className="motion-head" cx="54" cy="57" r="7" />
-        <path className="motion-limb strong" d="M61 60 L105 66 L138 76" />
-        <path className="motion-limb" d="M77 63 L67 84" />
-        <path className="motion-limb" d="M125 72 L145 85" />
-        <path className="motion-arrow" d="M72 45 C91 38 111 39 128 47" markerEnd={arrow} />
-      </>
-    );
-  }
-
-  if (pattern === "carry") {
-    return (
-      <>
-        <path className="motion-floor" d="M28 92 H152" />
-        <circle className="motion-head" cx="82" cy="24" r="7" />
-        <path className="motion-limb strong" d="M82 32 L82 58 L72 90" />
-        <path className="motion-limb strong" d="M82 58 L94 90" />
-        <path className="motion-limb" d="M70 45 L58 72" />
-        <path className="motion-limb" d="M94 45 L108 72" />
-        <rect className="motion-load" x="52" y="70" width="12" height="14" rx="3" />
-        <rect className="motion-load" x="104" y="70" width="12" height="14" rx="3" />
-        <path className="motion-arrow" d="M110 34 H145" markerEnd={arrow} />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <path className="motion-floor" d="M28 92 H152" />
-      <circle className="motion-head" cx="84" cy="26" r="7" />
-      <path className="motion-limb" d="M84 34 L84 58 L74 90" />
-      <path className="motion-limb" d="M84 58 L96 90" />
-      <path className="motion-limb strong" d="M84 43 L116 58" />
-      <path className="motion-limb strong" d="M116 58 L103 74" />
-      <path className="motion-load" d="M99 76 H118" />
-      <path className="motion-arrow" d="M124 55 C132 63 132 74 123 82" markerEnd={arrow} />
-    </>
   );
 }
 
@@ -556,85 +396,6 @@ function getRegionIntensity(
   );
 }
 
-function getMotionPattern(exercise: ExerciseVisualSource): MotionPattern {
-  const text = normalizeMuscleName(`${exercise.name} ${(exercise.tags ?? []).join(" ")}`);
-
-  if (
-    text.includes("plancha") ||
-    text.includes("dead bug") ||
-    text.includes("pallof") ||
-    text.includes("crunch") ||
-    text.includes("bird dog") ||
-    text.includes("elevación de piernas")
-  ) {
-    return "core";
-  }
-
-  if (text.includes("farmer carry")) {
-    return "carry";
-  }
-
-  if (
-    text.includes("zancada") ||
-    text.includes("step-up") ||
-    text.includes("split squat") ||
-    text.includes("unilateral")
-  ) {
-    return "lunge";
-  }
-
-  if (
-    text.includes("sentadilla") ||
-    text.includes("prensa") ||
-    text.includes("hack")
-  ) {
-    return "squat";
-  }
-
-  if (
-    text.includes("peso muerto") ||
-    text.includes("hip thrust") ||
-    text.includes("puente") ||
-    text.includes("swing") ||
-    text.includes("bisagra") ||
-    text.includes("extensión de espalda")
-  ) {
-    return "hinge";
-  }
-
-  if (
-    text.includes("remo") ||
-    text.includes("jalón") ||
-    text.includes("dominada") ||
-    text.includes("face pull") ||
-    text.includes("pullover") ||
-    text.includes("tirón")
-  ) {
-    return "pull";
-  }
-
-  if (
-    text.includes("press") ||
-    text.includes("flexiones") ||
-    text.includes("fondos") ||
-    text.includes("cruce") ||
-    text.includes("aperturas") ||
-    text.includes("empuje")
-  ) {
-    return "push";
-  }
-
-  return "isolation";
-}
-
-function getMotionSteps(exercise: ExerciseVisualSource): string[] {
-  return [
-    exercise.guide.setup[0],
-    exercise.guide.technique[0],
-    exercise.guide.technique[1] ?? exercise.guide.commonMistakes[0],
-  ].filter((item): item is string => Boolean(item));
-}
-
 function dedupeLabels(labels: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -654,4 +415,16 @@ function dedupeLabels(labels: string[]): string[] {
 
 function normalizeMuscleName(value: string): string {
   return value.trim().toLocaleLowerCase("es-MX");
+}
+
+function buildYoutubeQuery(exerciseName: string): string {
+  return `${exerciseName} técnica ejercicio tutorial gimnasio`;
+}
+
+function buildYoutubeSearchUrl(query: string): string {
+  const params = new URLSearchParams({
+    search_query: query,
+  });
+
+  return `https://www.youtube.com/results?${params.toString()}`;
 }
