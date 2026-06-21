@@ -367,6 +367,7 @@ function TodayPage({
 }) {
   const activeSummary = todayRoutine;
   const canTrain = Boolean(activeSummary && activeSummary.exerciseCount > 0);
+  const shouldHideTitleCreateOnMobile = !activeSummary && !hasInProgressWorkout;
   const primaryLabel = hasInProgressWorkout
     ? "Continuar"
     : canTrain
@@ -384,7 +385,7 @@ function TodayPage({
           <button
             className={`primary-button ${
               hasInProgressWorkout || canTrain ? "training" : "routine"
-            }`}
+            } ${shouldHideTitleCreateOnMobile ? "today-empty-title-action" : ""}`}
             type="button"
             onClick={() => {
               if (hasInProgressWorkout) {

@@ -24,6 +24,7 @@
   --open-section-y: 20px;
   --open-row-inset: 18px;
   --table-row-inset: 20px;
+  --mobile-bottom-clearance: 132px;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -386,6 +387,10 @@ select:focus-visible {
   color: #ffffff;
 }
 
+.primary-button svg {
+  color: currentColor;
+}
+
 .primary-button.routine {
   background: var(--routine);
   box-shadow: 0 8px 20px rgba(23, 122, 59, 0.18);
@@ -618,6 +623,14 @@ select:focus-visible {
   font-size: 17px;
 }
 
+.preset-shelf-note {
+  max-width: 580px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -692,6 +705,32 @@ select:focus-visible {
   align-self: start;
   justify-content: center;
   min-height: 36px;
+}
+
+.routine-list-section {
+  display: grid;
+  gap: 10px;
+}
+
+.routine-list-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 var(--open-section-inset);
+}
+
+.routine-list-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.routine-list-heading > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .routines-panel {
@@ -2289,7 +2328,7 @@ select:focus-visible {
 }
 
 .progress-panel-icon,
-.progress-empty-panel svg {
+.progress-empty-panel > svg {
   color: var(--progress);
 }
 
@@ -2869,6 +2908,7 @@ select:focus-visible {
     --open-section-y: 16px;
     --open-row-inset: 14px;
     --table-row-inset: 16px;
+    --mobile-bottom-clearance: calc(156px + env(safe-area-inset-bottom));
   }
 
   .app-shell {
@@ -2885,7 +2925,7 @@ select:focus-visible {
     height: auto;
     min-height: 100dvh;
     overflow: visible;
-    padding: 14px 14px 132px;
+    padding: 14px 14px var(--mobile-bottom-clearance);
   }
 
   .mobile-header {
@@ -2927,6 +2967,10 @@ select:focus-visible {
 
   .page-title h1 {
     font-size: 23px;
+  }
+
+  .today-empty-title-action {
+    display: none;
   }
 
   .today-grid,
@@ -3030,31 +3074,121 @@ select:focus-visible {
     display: none;
   }
 
+  .routine-list-section {
+    gap: 11px;
+    margin-top: 3px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+
+  .routine-list-heading {
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .routine-list-heading h2 {
+    font-size: 18px;
+  }
+
+  .routine-list-heading > span {
+    padding-top: 2px;
+    text-align: right;
+  }
+
+  .routines-panel {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .routines-panel .empty-state {
+    background: var(--surface);
+    box-shadow: none;
+  }
+
   .routine-row {
     grid-template-columns: 1fr;
     align-items: stretch;
     gap: 8px;
     min-height: 0;
-    padding: 14px var(--table-row-inset);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    padding: 14px 0;
+    background: transparent;
+  }
+
+  .routine-row:hover {
+    background: transparent;
+  }
+
+  .routine-row:last-child {
+    border-bottom: 1px solid var(--border);
   }
 
   .routine-list {
-    gap: 10px;
-    padding: 12px;
-    background: var(--surface-muted);
+    gap: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  .routine-presets-panel {
+    gap: 16px;
+    padding-top: 16px;
+    padding-bottom: 18px;
+  }
+
+  .preset-shelf-header {
+    align-items: flex-start;
+  }
+
+  .preset-shelf-note {
+    margin-top: 7px;
+    font-size: 12px;
   }
 
   .preset-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 0;
   }
 
   .preset-card {
     min-height: 0;
-    padding-right: 0;
-    padding-left: 0;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    padding: 0 0 18px;
+  }
+
+  .preset-card + .preset-card {
+    padding-top: 18px;
+  }
+
+  .preset-card:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .preset-card strong {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .preset-card span,
+  .preset-card p {
+    font-size: 13px;
+  }
+
+  .preset-card dl {
+    gap: 10px 18px;
+  }
+
+  .preset-card dt {
+    font-size: 10px;
+  }
+
+  .preset-card dd {
+    font-size: 12px;
   }
 
   .routine-main-cell {

@@ -329,56 +329,70 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
         />
       ) : null}
 
-      <article className="panel routines-panel">
-        <div className="routine-table-head">
-          <span>Rutina</span>
-          <span>Objetivo</span>
-          <span>Días</span>
-          <span>Ejercicios</span>
-          <span>Acciones</span>
+      <section className="routine-list-section" aria-labelledby="routine-list-title">
+        <div className="routine-list-heading">
+          <div>
+            <p className="panel-label">Rutinas</p>
+            <h2 id="routine-list-title">Tus rutinas</h2>
+          </div>
+          <span>{isOrderMode ? "Orden manual activo" : "Activas y editables"}</span>
         </div>
 
-        {isLoading ? (
-          <div className="empty-state">
-            <strong>Cargando rutinas</strong>
-            <p>Revisando los datos locales guardados en este navegador.</p>
+        <article className="panel routines-panel">
+          <div className="routine-table-head">
+            <span>Rutina</span>
+            <span>Objetivo</span>
+            <span>Días</span>
+            <span>Ejercicios</span>
+            <span>Acciones</span>
           </div>
-        ) : visibleSummaries.length === 0 ? (
-          <div className="empty-state">
-            <strong>
-              {searchQuery ? "No hay coincidencias" : "Aún no tienes rutinas"}
-            </strong>
-            <p>
-              {searchQuery
-                ? "Ajusta la búsqueda para volver a ver tus rutinas."
-                : "Crea la primera rutina para activar el constructor mínimo y ordenar tus bloques."}
-            </p>
-            {!searchQuery ? (
-              <button className="primary-button routine" type="button" onClick={openCreateForm}>
-                <Plus size={16} />
-                Crear rutina
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <div className="routine-list">
-            {visibleSummaries.map((summary, index) => (
-              <RoutineRow
-                key={summary.routine.id}
-                summary={summary}
-                index={index}
-                isOrderMode={isOrderMode}
-                canMoveUp={index > 0}
-                canMoveDown={index < visibleSummaries.length - 1}
-                onMove={moveRoutine}
-                onEdit={setBuilderTarget}
-                onStartWorkout={onStartWorkout}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
-        )}
-      </article>
+
+          {isLoading ? (
+            <div className="empty-state">
+              <strong>Cargando rutinas</strong>
+              <p>Revisando los datos locales guardados en este navegador.</p>
+            </div>
+          ) : visibleSummaries.length === 0 ? (
+            <div className="empty-state">
+              <strong>
+                {searchQuery ? "No hay coincidencias" : "Aún no tienes rutinas"}
+              </strong>
+              <p>
+                {searchQuery
+                  ? "Ajusta la búsqueda para volver a ver tus rutinas."
+                  : "Crea la primera rutina para activar el constructor mínimo y ordenar tus bloques."}
+              </p>
+              {!searchQuery ? (
+                <button
+                  className="primary-button routine"
+                  type="button"
+                  onClick={openCreateForm}
+                >
+                  <Plus size={16} />
+                  Crear rutina
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="routine-list">
+              {visibleSummaries.map((summary, index) => (
+                <RoutineRow
+                  key={summary.routine.id}
+                  summary={summary}
+                  index={index}
+                  isOrderMode={isOrderMode}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < visibleSummaries.length - 1}
+                  onMove={moveRoutine}
+                  onEdit={setBuilderTarget}
+                  onStartWorkout={onStartWorkout}
+                  onDelete={setDeleteTarget}
+                />
+              ))}
+            </div>
+          )}
+        </article>
+      </section>
 
       {isCreateOpen ? (
         <CreateRoutineDialog
@@ -435,6 +449,9 @@ function PresetShelf({
         <div>
           <p className="panel-label">Plantillas</p>
           <h2 id="routine-presets-title">Rutinas de muestra</h2>
+          <p className="preset-shelf-note">
+            La carga se registra por serie al entrenar y aparece después en Progreso.
+          </p>
         </div>
         <Dumbbell size={18} />
       </div>
