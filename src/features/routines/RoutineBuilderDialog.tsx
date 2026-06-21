@@ -371,11 +371,14 @@ export function RoutineBuilderDialog({
             ) : filteredExercises.length > 0 ? (
               <div className="exercise-library-list">
                 {filteredExercises.map((exercise) => (
-                  <div className="exercise-library-row" key={exercise.id}>
+                  <div
+                    className="exercise-library-row"
+                    data-active={exercise.id === guideExercise?.id}
+                    key={exercise.id}
+                  >
                     <button
                       type="button"
                       className="library-main-button"
-                      data-active={exercise.id === guideExercise?.id}
                       onClick={() => setSelectedExerciseId(exercise.id)}
                     >
                       <strong>{exercise.name}</strong>

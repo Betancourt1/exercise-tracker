@@ -1132,25 +1132,30 @@ select:focus-visible {
 }
 
 .exercise-library-list {
-  max-height: 242px;
+  max-height: 286px;
   overflow-y: auto;
 }
 
 .exercise-library-row {
   align-items: center;
-  min-height: 46px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  min-height: 58px;
+  padding: 8px 0 8px 10px;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
 }
 
-.exercise-library-row:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+.exercise-library-row:hover,
+.exercise-library-row[data-active="true"] {
+  border-color: rgba(23, 122, 59, 0.1);
+  background: var(--surface-muted);
 }
 
 .library-main-button {
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 7px 8px 7px 0;
 }
 
 .library-main-button small {
@@ -1165,11 +1170,6 @@ select:focus-visible {
 .library-main-button strong {
   overflow-wrap: anywhere;
   white-space: normal;
-}
-
-.library-main-button:hover,
-.library-main-button[data-active="true"] {
-  background: var(--surface-muted);
 }
 
 .builder-guide {
