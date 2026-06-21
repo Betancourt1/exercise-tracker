@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mi Rutina">
+  <rect width="64" height="64" rx="14" fill="#111827"/>
+  <path d="M16 28h6v8h-6zM42 28h6v8h-6z" fill="#f9fafb"/>
+  <path d="M22 24h5v16h-5zM37 24h5v16h-5z" fill="#22c55e"/>
+  <path d="M27 30h10v4H27z" fill="#f9fafb"/>
+  <path d="M13 31h3v2h-3zM48 31h3v2h-3z" fill="#9ca3af"/>
+</svg>
