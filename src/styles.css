@@ -1275,6 +1275,7 @@ select:focus-visible {
 
 .workout-page {
   max-width: 1180px;
+  container-type: inline-size;
 }
 
 .workout-title-icon,
@@ -1421,7 +1422,7 @@ select:focus-visible {
 
 .workout-set-row {
   display: grid;
-  grid-template-columns: minmax(58px, 0.45fr) repeat(3, minmax(70px, 0.7fr)) minmax(92px, 0.65fr);
+  grid-template-columns: minmax(56px, 0.45fr) repeat(3, minmax(62px, 0.7fr)) minmax(82px, 0.65fr);
   gap: 8px;
   align-items: end;
   min-width: 0;
@@ -1489,6 +1490,38 @@ select:focus-visible {
   display: block;
   color: var(--training);
   font-size: 20px;
+}
+
+@container (max-width: 900px) {
+  .workout-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 240px);
+  }
+
+  .workout-queue-panel {
+    grid-column: 1 / -1;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 12px;
+  }
+
+  .workout-queue {
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    margin-top: 10px;
+  }
+
+  .workout-main-panel,
+  .workout-guide-panel {
+    grid-row: 2;
+  }
+
+  .workout-main-panel {
+    grid-column: 1;
+  }
+
+  .workout-guide-panel {
+    grid-column: 2;
+  }
 }
 
 .compact-actions {
@@ -2948,6 +2981,17 @@ select:focus-visible {
   .workout-layout,
   .workout-set-row {
     grid-template-columns: 1fr;
+  }
+
+  .workout-page .workout-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workout-queue-panel,
+  .workout-main-panel,
+  .workout-guide-panel {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .workout-status-strip {
