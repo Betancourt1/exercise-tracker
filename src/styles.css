@@ -475,12 +475,12 @@ li {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
-  background: var(--surface-raised);
+  background: transparent;
   color: var(--text-secondary);
-  border: 1px solid var(--border);
+  border: none;
   transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
 }
@@ -2337,13 +2337,11 @@ li {
 
 .equipment-detail-callout {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--accent-soft);
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  align-items: baseline;
+  gap: 8px;
   font-size: 0.8125rem;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border);
 }
 
 .equipment-detail-callout span {
@@ -2355,7 +2353,7 @@ li {
 }
 
 .equipment-detail-callout strong {
-  color: var(--text);
+  color: var(--text-secondary);
 }
 
 /* =====================================================
@@ -3963,10 +3961,9 @@ li {
 .body-muscle-map {
   display: flex;
   flex-direction: column;
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px;
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .visual-section-header {
@@ -3993,7 +3990,7 @@ li {
 
 .body-map-svg {
   display: block;
-  max-width: 220px;
+  max-width: 200px;
   width: 100%;
   height: auto;
   margin: 8px auto;
@@ -4074,63 +4071,47 @@ li {
 .exercise-video-snippet {
   display: flex;
   flex-direction: column;
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px;
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .youtube-snippet-card {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 10px;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 6px 0;
   text-decoration: none;
-  color: inherit;
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+  color: var(--accent-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: color 0.15s ease;
+  width: fit-content;
 }
 
 .youtube-snippet-card:hover {
-  border-color: var(--accent-hover);
-  background-color: var(--surface-hover);
-  transform: translateY(-1px);
-}
-
-.youtube-snippet-card:active {
-  transform: translateY(0);
+  color: var(--accent-hover);
+  text-decoration: underline;
 }
 
 .youtube-snippet-thumb {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  background: rgba(239, 68, 68, 0.1);
   color: #ef4444; /* YouTube red */
-  border-radius: var(--radius-sm);
   flex-shrink: 0;
-  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .youtube-snippet-thumb span {
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-top: 2px;
-  letter-spacing: 0.05em;
+  display: none;
 }
 
 .youtube-snippet-copy {
   display: flex;
-  flex-direction: column;
-  flex: 1;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
-  gap: 2px;
 }
 
 .youtube-snippet-copy strong {
@@ -4143,8 +4124,8 @@ li {
 }
 
 .youtube-snippet-copy small {
-  font-size: 0.6875rem;
-  color: var(--text-secondary);
+  font-size: 0.75rem;
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4154,7 +4135,7 @@ li {
   font-size: 0.6875rem;
   color: var(--muted);
   line-height: 1.4;
-  margin-top: 8px;
+  margin-top: 6px;
   margin-bottom: 0;
 }
 
