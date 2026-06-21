@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Download,
   Dumbbell,
+  Home,
   Library,
   Play,
   Plus,
@@ -14,6 +15,7 @@ import {
   Settings,
   Trash2,
   Upload,
+  User,
 } from "lucide-react";
 import { ProgressPage } from "./features/progress/ProgressPage";
 import {
@@ -55,59 +57,20 @@ type SettingsStatus = {
 const ACTIVE_PAGE_STORAGE_KEY = "mi-rutina-active-page";
 
 const navItems: NavItem[] = [
-  { id: "today", label: "Hoy", icon: CalendarDays },
-  { id: "routines", label: "Rutinas", icon: Dumbbell },
+  { id: "today", label: "Inicio", icon: Home },
+  { id: "routines", label: "Entrenar", icon: Dumbbell },
   { id: "exercises", label: "Ejercicios", icon: Library },
   { id: "progress", label: "Progreso", icon: BarChart3 },
-  { id: "settings", label: "Ajustes", icon: Settings },
+  { id: "settings", label: "Perfil", icon: User },
 ];
 
-const contextByPage: Record<
-  PageId,
-  {
-    title: string;
-    eyebrow: string;
-    body: string;
-    bullets: string[];
-  }
-> = {
-  today: {
-    title: "Siguiente entrenamiento",
-    eyebrow: "Contexto",
-    body: "Cuando exista una rutina activa, aquí aparecerá el bloque recomendado para empezar la sesión.",
-    bullets: ["Rutina prioritaria", "Última sesión", "Recordatorio técnico"],
-  },
-  routines: {
-    title: "Guía de constructor",
-    eyebrow: "Rutinas",
-    body: "Al agregar ejercicios, este panel mostrará técnica breve, errores comunes y descansos sugeridos.",
-    bullets: ["Nombre y objetivo", "Días activos", "Ejercicios por bloque"],
-  },
-  exercises: {
-    title: "Guía de ejercicio",
-    eyebrow: "Biblioteca",
-    body: "Selecciona un movimiento para ver indicaciones compactas sin salir del flujo de elección.",
-    bullets: ["Equipo exacto", "Técnica", "Errores comunes"],
-  },
-  progress: {
-    title: "Lectura de progreso",
-    eyebrow: "Analíticas",
-    body: "Las métricas se calcularán desde sesiones guardadas y mostrarán fórmulas simples.",
-    bullets: ["Volumen", "Adherencia", "PRs y tendencia"],
-  },
-  settings: {
-    title: "Datos locales",
-    eyebrow: "Respaldo",
-    body: "La exportación e importación serán el escape para recuperar rutinas e historial local.",
-    bullets: ["Unidades", "Exportar", "Importar"],
-  },
-  workout: {
-    title: "Guía durante la sesión",
-    eyebrow: "Entrenar",
-    body: "La sesión activa guarda borradores locales y conserva snapshots de rutina, ejercicio y objetivos.",
-    bullets: ["Set actual", "Descanso", "Técnica compacta"],
-  },
-};
+// Mobile nav shows only 4 items
+const mobileNavItems: NavItem[] = [
+  { id: "today", label: "Inicio", icon: Home },
+  { id: "routines", label: "Entrenar", icon: Dumbbell },
+  { id: "progress", label: "Progreso", icon: BarChart3 },
+  { id: "settings", label: "Perfil", icon: User },
+];
 
 function App() {
   const [activePage, setActivePage] = useState<PageId>(getStoredActivePage);
@@ -115,6 +78,7 @@ function App() {
   const [workoutStartRequest, setWorkoutStartRequest] =
     useState<WorkoutStartRequest | null>(null);
   const [hasInProgressWorkout, setHasInProgressWorkout] = useState(false);
+
   const activeNavItem = useMemo(
     () =>
       activePage === "workout"
@@ -122,12 +86,15 @@ function App() {
         : navItems.find((item) => item.id === activePage) ?? navItems[0],
     [activePage],
   );
+
   const refreshTodayRoutine = useCallback(async () => {
     setTodayRoutine(await loadHighestPriorityActiveRoutine());
   }, []);
+
   const refreshInProgressWorkout = useCallback(async () => {
     setHasInProgressWorkout(Boolean(await getLatestInProgressWorkoutDraft()));
   }, []);
+
   const refreshAppData = useCallback(async () => {
     await Promise.all([refreshTodayRoutine(), refreshInProgressWorkout()]);
   }, [refreshInProgressWorkout, refreshTodayRoutine]);
@@ -164,12 +131,19 @@ function App() {
     void refreshInProgressWorkout();
   }
 
+  const isWorkoutActive = activePage === "workout";
+
   return (
     <div className="app-shell">
-      <DesktopSidebar activePage={activePage} onNavigate={setActivePage} />
+      {/* Desktop sidebar — hidden during active workout */}
+      {!isWorkoutActive && (
+        <DesktopSidebar activePage={activePage} onNavigate={setActivePage} />
+      )}
 
       <main className="workspace" aria-labelledby="page-title">
-        <MobileHeader activeItem={activeNavItem} />
+        {/* Mobile header — hidden during workout */}
+        {!isWorkoutActive && <MobileHeader activeItem={activeNavItem} />}
+
         <Page
           activePage={activePage}
           todayRoutine={todayRoutine}
@@ -183,11 +157,17 @@ function App() {
           onWorkoutChanged={refreshInProgressWorkout}
           onDataImported={refreshAppData}
         />
-        <MobileContext activePage={activePage} />
       </main>
 
-      <ContextPanel activePage={activePage} />
-      <MobileNav activePage={activePage} onNavigate={setActivePage} />
+      {/* Mobile bottom nav — hidden during workout */}
+      {!isWorkoutActive && (
+        <MobileNav
+          activePage={activePage}
+          onNavigate={setActivePage}
+          hasInProgressWorkout={hasInProgressWorkout}
+          onContinueWorkout={continueWorkout}
+        />
+      )}
     </div>
   );
 }
@@ -938,61 +918,47 @@ function PageTitle({
   );
 }
 
-function ContextPanel({ activePage }: { activePage: PageId }) {
-  const context = contextByPage[activePage];
-
-  return (
-    <aside className="context-panel" aria-label="Panel contextual">
-      <p className="panel-label">{context.eyebrow}</p>
-      <h2>{context.title}</h2>
-      <p className="muted">{context.body}</p>
-      <GuideList items={context.bullets} />
-
-      <div className="context-note">
-        <span className="status-dot" />
-        <p>El historial se conservará aunque una rutina cambie o se elimine.</p>
-      </div>
-    </aside>
-  );
-}
-
-function MobileContext({ activePage }: { activePage: PageId }) {
-  const context = contextByPage[activePage];
-
-  return (
-    <article className="mobile-context">
-      <p className="panel-label">{context.eyebrow}</p>
-      <h2>{context.title}</h2>
-      <p className="muted">{context.body}</p>
-    </article>
-  );
-}
-
 function MobileNav({
   activePage,
   onNavigate,
+  hasInProgressWorkout,
+  onContinueWorkout,
 }: {
   activePage: PageId;
   onNavigate: (page: PageId) => void;
+  hasInProgressWorkout: boolean;
+  onContinueWorkout: () => void;
 }) {
   return (
     <nav className="mobile-nav" aria-label="Navegación principal">
-      {navItems.map((item) => {
+      {mobileNavItems.map((item) => {
         const Icon = item.icon;
+        const isActive = activePage === item.id;
 
         return (
           <button
             key={item.id}
             type="button"
-            data-active={activePage === item.id}
+            data-active={isActive}
             onClick={() => onNavigate(item.id)}
-            aria-current={activePage === item.id ? "page" : undefined}
+            aria-current={isActive ? "page" : undefined}
           >
-            <Icon size={18} strokeWidth={2} />
+            <Icon size={20} strokeWidth={2} />
             <span>{item.label}</span>
           </button>
         );
       })}
+      {hasInProgressWorkout && (
+        <button
+          type="button"
+          data-active={activePage === "workout"}
+          onClick={onContinueWorkout}
+          style={{ color: "var(--accent-text)" }}
+        >
+          <Dumbbell size={20} strokeWidth={2} />
+          <span>Sesión</span>
+        </button>
+      )}
     </nav>
   );
 }

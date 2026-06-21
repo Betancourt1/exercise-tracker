@@ -5,12 +5,11 @@ import {
   ArrowUp,
   Check,
   Dumbbell,
+  MoreHorizontal,
   Pencil,
   Play,
   Plus,
-  RotateCcw,
   Search,
-  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -68,6 +67,8 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
   const [deletedRoutine, setDeletedRoutine] = useState<DeletedRoutineToast | null>(null);
   const [isOrderMode, setIsOrderMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isPresetsOpen, setIsPresetsOpen] = useState(false);
 
   async function refreshRoutines() {
     setIsLoading(true);
@@ -172,6 +173,7 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
       await saveRoutineGraph(routineGraph);
       await refreshRoutines();
       onRoutinesChanged?.();
+      setIsPresetsOpen(false);
     } catch {
       setError("No se pudo crear la rutina desde la plantilla.");
     } finally {
@@ -227,6 +229,7 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
     setSearchQuery("");
     setDraftOrder(summaries);
     setIsOrderMode(true);
+    setOpenMenuId(null);
   }
 
   function cancelOrderMode() {
@@ -265,21 +268,49 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
     }
   }
 
+  // Close popover when clicking outside
+  function handleOverlayClick() {
+    setOpenMenuId(null);
+  }
+
+  const routineExerciseSummary = (summary: RoutineSummary): string => {
+    const allExercises = summary.days.flatMap((day) =>
+      summary.routineExercises
+        .filter((re) => re.routineDayId === day.id)
+        .map((re) => {
+          // Try to find the exercise name from setLogs or snapshot — use exerciseId as fallback
+          return re.exerciseId;
+        }),
+    );
+    if (allExercises.length === 0) return "Sin ejercicios configurados";
+    return `${allExercises.length} ejercicio${allExercises.length === 1 ? "" : "s"}`;
+  };
+
   return (
-    <section className="page-section routines-page">
+    <section className="page-section routines-hevy" onClick={openMenuId ? handleOverlayClick : undefined}>
+      {/* Top: header */}
       <header className="page-title">
         <div>
           <p>Rutinas</p>
-          <h1 id="page-title">Rutinas</h1>
+          <h1 id="page-title">Entrenamiento</h1>
         </div>
-        <button className="primary-button routine" type="button" onClick={openCreateForm}>
-          <Plus size={16} />
-          Crear rutina
-        </button>
       </header>
 
-      <div className="toolbar routines-toolbar">
-        <label className="search-box">
+      {/* Empezar entrenamiento vacío */}
+      <button
+        className="start-empty-workout-btn"
+        type="button"
+        onClick={() => {
+          /* For now, direct to today */
+        }}
+      >
+        <Plus size={18} />
+        Empezar entrenamiento vacío
+      </button>
+
+      {/* Search */}
+      <div className="routines-toolbar">
+        <label className="search-box" style={{ flex: 1 }}>
           <Search size={15} />
           <input
             placeholder={isOrderMode ? "Orden manual activo" : "Buscar rutina"}
@@ -289,9 +320,8 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
             onChange={(event) => setSearchQuery(event.target.value)}
           />
         </label>
-
         {isOrderMode ? (
-          <div className="toolbar-actions">
+          <div className="routine-order-controls">
             <button className="secondary-button" type="button" onClick={cancelOrderMode}>
               <X size={16} />
               Cancelar
@@ -306,94 +336,100 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
               Guardar orden
             </button>
           </div>
-        ) : (
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={startOrderMode}
-            disabled={summaries.length < 2}
-          >
-            <SlidersHorizontal size={16} />
-            Orden manual
-          </button>
-        )}
+        ) : null}
       </div>
 
       {error ? <p className="form-error">{error}</p> : null}
 
+      {/* Section header: Rutinas + add */}
+      <div className="routines-section-header">
+        <h2>Rutinas</h2>
+        <button className="icon-button" type="button" aria-label="Crear rutina" onClick={openCreateForm}>
+          <Plus size={16} />
+        </button>
+      </div>
+
+      {/* Nueva Rutina / Explorar */}
       {!isOrderMode ? (
-        <PresetShelf
-          presets={ROUTINE_PRESETS}
-          isSaving={isSaving}
-          onCreate={handleCreateFromPreset}
-        />
+        <div className="routine-presets-row">
+          <button type="button" onClick={openCreateForm}>
+            <Plus size={16} />
+            Nueva Rutina
+          </button>
+          <button type="button" onClick={() => setIsPresetsOpen(true)}>
+            <Dumbbell size={16} />
+            Explorar
+          </button>
+        </div>
       ) : null}
 
-      <section className="routine-list-section" aria-labelledby="routine-list-title">
-        <div className="routine-list-heading">
-          <div>
-            <p className="panel-label">Rutinas</p>
-            <h2 id="routine-list-title">Tus rutinas</h2>
-          </div>
-          <span>{isOrderMode ? "Orden manual activo" : "Activas y editables"}</span>
+      {/* Routine list as cards */}
+      {isLoading ? (
+        <div className="empty-state">
+          <strong>Cargando rutinas</strong>
+          <p>Revisando los datos locales guardados en este navegador.</p>
         </div>
-
-        <article className="panel routines-panel">
-          <div className="routine-table-head">
-            <span>Rutina</span>
-            <span>Objetivo</span>
-            <span>Días</span>
-            <span>Ejercicios</span>
-            <span>Acciones</span>
+      ) : visibleSummaries.length === 0 ? (
+        <div className="routines-empty-cta">
+          <Dumbbell size={40} style={{ color: "var(--muted)", opacity: 0.4 }} />
+          <strong>{searchQuery ? "No hay coincidencias" : "Aún no tienes rutinas"}</strong>
+          <p style={{ color: "var(--muted)", fontSize: "0.875rem", maxWidth: 280, textAlign: "center" }}>
+            {searchQuery
+              ? "Ajusta la búsqueda para volver a ver tus rutinas."
+              : "Crea la primera rutina para empezar a entrenar."}
+          </p>
+          {!searchQuery ? (
+            <button className="primary-button routine" type="button" onClick={openCreateForm}>
+              <Plus size={16} />
+              Crear rutina
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          {/* Folder header */}
+          <div className="routine-folder-header">
+            <div className="routine-folder-header-left">
+              <span>Mis rutinas</span>
+              <span className="routine-folder-count">{visibleSummaries.length}</span>
+            </div>
+            {summaries.length >= 2 && !isOrderMode ? (
+              <button
+                className="quiet-button"
+                type="button"
+                onClick={startOrderMode}
+                style={{ fontSize: "0.8125rem" }}
+              >
+                Ordenar
+              </button>
+            ) : null}
           </div>
 
-          {isLoading ? (
-            <div className="empty-state">
-              <strong>Cargando rutinas</strong>
-              <p>Revisando los datos locales guardados en este navegador.</p>
-            </div>
-          ) : visibleSummaries.length === 0 ? (
-            <div className="empty-state">
-              <strong>
-                {searchQuery ? "No hay coincidencias" : "Aún no tienes rutinas"}
-              </strong>
-              <p>
-                {searchQuery
-                  ? "Ajusta la búsqueda para volver a ver tus rutinas."
-                  : "Crea la primera rutina para activar el constructor mínimo y ordenar tus bloques."}
-              </p>
-              {!searchQuery ? (
-                <button
-                  className="primary-button routine"
-                  type="button"
-                  onClick={openCreateForm}
-                >
-                  <Plus size={16} />
-                  Crear rutina
-                </button>
-              ) : null}
-            </div>
-          ) : (
-            <div className="routine-list">
-              {visibleSummaries.map((summary, index) => (
-                <RoutineRow
-                  key={summary.routine.id}
-                  summary={summary}
-                  index={index}
-                  isOrderMode={isOrderMode}
-                  canMoveUp={index > 0}
-                  canMoveDown={index < visibleSummaries.length - 1}
-                  onMove={moveRoutine}
-                  onEdit={setBuilderTarget}
-                  onStartWorkout={onStartWorkout}
-                  onDelete={setDeleteTarget}
-                />
-              ))}
-            </div>
-          )}
-        </article>
-      </section>
+          <div className="routine-card-list">
+            {visibleSummaries.map((summary, index) => (
+              <RoutineCard
+                key={summary.routine.id}
+                summary={summary}
+                index={index}
+                isOrderMode={isOrderMode}
+                canMoveUp={index > 0}
+                canMoveDown={index < visibleSummaries.length - 1}
+                isMenuOpen={openMenuId === summary.routine.id}
+                exerciseSummary={routineExerciseSummary(summary)}
+                onMove={moveRoutine}
+                onEdit={setBuilderTarget}
+                onStartWorkout={onStartWorkout}
+                onDelete={setDeleteTarget}
+                onMenuToggle={(id) => {
+                  setOpenMenuId((current) => (current === id ? null : id));
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
+      {/* Create routine dialog */}
       {isCreateOpen ? (
         <CreateRoutineDialog
           formState={formState}
@@ -405,6 +441,7 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
         />
       ) : null}
 
+      {/* Delete confirm dialog */}
       {deleteTarget ? (
         <ConfirmDeleteDialog
           routineName={deleteTarget.routine.name}
@@ -414,6 +451,7 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
         />
       ) : null}
 
+      {/* Routine builder dialog */}
       {builderTarget ? (
         <RoutineBuilderDialog
           summary={builderTarget}
@@ -422,6 +460,17 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
         />
       ) : null}
 
+      {/* Presets modal */}
+      {isPresetsOpen ? (
+        <PresetsModal
+          presets={ROUTINE_PRESETS}
+          isSaving={isSaving}
+          onCreate={handleCreateFromPreset}
+          onClose={() => setIsPresetsOpen(false)}
+        />
+      ) : null}
+
+      {/* Deleted routine toast */}
       {deletedRoutine ? (
         <div className="toast" role="status">
           <span>{deletedRoutine.name} eliminada.</span>
@@ -434,164 +483,208 @@ export function RoutinesPage({ onRoutinesChanged, onStartWorkout }: RoutinesPage
   );
 }
 
-function PresetShelf({
-  presets,
-  isSaving,
-  onCreate,
-}: {
-  presets: RoutinePreset[];
-  isSaving: boolean;
-  onCreate: (preset: RoutinePreset) => void;
-}) {
-  return (
-    <article className="routine-presets-panel" aria-labelledby="routine-presets-title">
-      <div className="preset-shelf-header">
-        <div>
-          <p className="panel-label">Plantillas</p>
-          <h2 id="routine-presets-title">Rutinas de muestra</h2>
-          <p className="preset-shelf-note">
-            La carga se registra por serie al entrenar y aparece después en Progreso.
-          </p>
-        </div>
-        <Dumbbell size={18} />
-      </div>
-      <div className="preset-grid">
-        {presets.map((preset) => (
-          <div className="preset-card" key={preset.id}>
-            <div>
-              <strong>{preset.name}</strong>
-              <span>{preset.summary}</span>
-            </div>
-            <dl>
-              <div>
-                <dt>Días</dt>
-                <dd>{preset.daysPerWeek}</dd>
-              </div>
-              <div>
-                <dt>Duración</dt>
-                <dd>{preset.duration}</dd>
-              </div>
-              <div>
-                <dt>Equipo</dt>
-                <dd>{preset.equipment}</dd>
-              </div>
-            </dl>
-            <p>{preset.progression}</p>
-            <button
-              className="secondary-button"
-              type="button"
-              disabled={isSaving}
-              onClick={() => onCreate(preset)}
-            >
-              <Plus size={16} />
-              Usar plantilla
-            </button>
-          </div>
-        ))}
-      </div>
-    </article>
-  );
-}
-
-function RoutineRow({
+function RoutineCard({
   summary,
   index,
   isOrderMode,
   canMoveUp,
   canMoveDown,
+  isMenuOpen,
+  exerciseSummary,
   onMove,
   onEdit,
   onStartWorkout,
   onDelete,
+  onMenuToggle,
 }: {
   summary: RoutineSummary;
   index: number;
   isOrderMode: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  isMenuOpen: boolean;
+  exerciseSummary: string;
   onMove: (index: number, direction: -1 | 1) => void;
   onEdit: (summary: RoutineSummary) => void;
   onStartWorkout?: (summary: RoutineSummary) => void;
   onDelete: (summary: RoutineSummary) => void;
+  onMenuToggle: (id: string) => void;
 }) {
   const routine = summary.routine;
-  const dayCopy = formatCount(summary.days.length, "día", "días");
-  const exerciseCopy = formatCount(summary.exerciseCount, "ejercicio", "ejercicios");
+
+  // Build exercise preview text
+  const dayLabels = summary.days.map((d) => d.label).join(" · ");
+  const previewText = summary.exerciseCount > 0
+    ? `${summary.exerciseCount} ejercicios · ${dayLabels}`
+    : `Sin ejercicios · ${dayLabels}`;
 
   return (
-    <div className="routine-row">
-      <div className="routine-main-cell">
-        <strong>{routine.name}</strong>
-        <span className="routine-status" data-status={routine.status}>
-          {formatStatus(routine.status)}
-        </span>
-      </div>
-      <span>{routine.goal || "General"}</span>
-      <span>{dayCopy}</span>
-      <span className="routine-exercise-cell">
-        {exerciseCopy}
-        {summary.exerciseCount === 0 ? (
-          <small>Agrega ejercicios para entrenar.</small>
-        ) : null}
-      </span>
-      <div className="routine-actions">
+    <div className="routine-card" style={{ position: "relative" }}>
+      <div className="routine-card-top">
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+          <span className="routine-card-name">{routine.name}</span>
+          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
+            {routine.goal || "General"}
+          </span>
+        </div>
+
         {isOrderMode ? (
-          <>
+          <div style={{ display: "flex", gap: 4 }}>
             <button
               className="icon-button"
               type="button"
               aria-label={`Subir ${routine.name}`}
               disabled={!canMoveUp}
-              onClick={() => onMove(index, -1)}
+              onClick={(e) => { e.stopPropagation(); onMove(index, -1); }}
             >
-              <ArrowUp size={16} />
+              <ArrowUp size={15} />
             </button>
             <button
               className="icon-button"
               type="button"
               aria-label={`Bajar ${routine.name}`}
               disabled={!canMoveDown}
-              onClick={() => onMove(index, 1)}
+              onClick={(e) => { e.stopPropagation(); onMove(index, 1); }}
             >
-              <ArrowDown size={16} />
+              <ArrowDown size={15} />
             </button>
-          </>
+          </div>
         ) : (
-          <>
-            <button
-              className="icon-button training"
-              type="button"
-              title={
-                summary.exerciseCount > 0
-                  ? "Entrenar"
-                  : "Agrega ejercicios antes de entrenar"
-              }
-              aria-label={`Entrenar ${routine.name}`}
-              disabled={!onStartWorkout || summary.exerciseCount === 0}
-              onClick={() => onStartWorkout?.(summary)}
-            >
-              <Play size={16} />
-            </button>
-            <button
-              className="icon-button"
-              type="button"
-              title="Editar rutina"
-              aria-label={`Editar ${routine.name}`}
-              onClick={() => onEdit(summary)}
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              className="icon-button danger"
-              type="button"
-              title="Eliminar rutina"
-              aria-label={`Eliminar ${routine.name}`}
-              onClick={() => onDelete(summary)}
-            >
-              <Trash2 size={16} />
-            </button>
-          </>
+          <button
+            className="routine-card-menu-btn"
+            type="button"
+            aria-label="Opciones de rutina"
+            onClick={(e) => { e.stopPropagation(); onMenuToggle(routine.id); }}
+          >
+            <MoreHorizontal size={18} />
+          </button>
         )}
+      </div>
+
+      <p className="routine-card-exercises">{previewText}</p>
+
+      <button
+        className="routine-card-start-btn"
+        type="button"
+        disabled={!onStartWorkout || summary.exerciseCount === 0}
+        onClick={() => onStartWorkout?.(summary)}
+      >
+        <Play size={15} />
+        {summary.exerciseCount === 0 ? "Agrega ejercicios para entrenar" : "Empezar Rutina"}
+      </button>
+
+      {/* Popover menu */}
+      {isMenuOpen && !isOrderMode && (
+        <div
+          className="routine-menu-popover"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => { onEdit(summary); onMenuToggle(routine.id); }}
+          >
+            <Pencil size={15} />
+            Editar
+          </button>
+          <button
+            type="button"
+            disabled={!canMoveUp}
+            onClick={() => { onMove(index, -1); onMenuToggle(routine.id); }}
+          >
+            <ArrowUp size={15} />
+            Subir
+          </button>
+          <button
+            type="button"
+            disabled={!canMoveDown}
+            onClick={() => { onMove(index, 1); onMenuToggle(routine.id); }}
+          >
+            <ArrowDown size={15} />
+            Bajar
+          </button>
+          <button
+            className="danger"
+            type="button"
+            onClick={() => { onDelete(summary); onMenuToggle(routine.id); }}
+          >
+            <Trash2 size={15} />
+            Eliminar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PresetsModal({
+  presets,
+  isSaving,
+  onCreate,
+  onClose,
+}: {
+  presets: RoutinePreset[];
+  isSaving: boolean;
+  onCreate: (preset: RoutinePreset) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="dialog-backdrop" role="presentation">
+      <div className="dialog-card" role="dialog" aria-modal="true" style={{ maxWidth: 580 }}>
+        <div className="dialog-header">
+          <div>
+            <p className="panel-label">Plantillas</p>
+            <h2>Explorar rutinas de muestra</h2>
+          </div>
+          <button className="icon-button" type="button" aria-label="Cerrar" onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <p className="muted">
+          La carga se registra por serie al entrenar y aparece después en Progreso.
+        </p>
+
+        <div className="presets-modal-grid">
+          {presets.map((preset) => (
+            <div className="preset-card" key={preset.id}>
+              <div>
+                <strong>{preset.name}</strong>
+                <span>{preset.summary}</span>
+              </div>
+              <dl>
+                <div>
+                  <dt>Días</dt>
+                  <dd>{preset.daysPerWeek}</dd>
+                </div>
+                <div>
+                  <dt>Duración</dt>
+                  <dd>{preset.duration}</dd>
+                </div>
+                <div>
+                  <dt>Equipo</dt>
+                  <dd>{preset.equipment}</dd>
+                </div>
+              </dl>
+              <p>{preset.progression}</p>
+              <button
+                className="primary-button routine"
+                type="button"
+                disabled={isSaving}
+                onClick={() => onCreate(preset)}
+                style={{ width: "100%", justifyContent: "center" }}
+              >
+                <Plus size={15} />
+                Usar plantilla
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="dialog-actions">
+          <button className="secondary-button" type="button" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -751,6 +844,6 @@ function formatStatus(status: RoutineStatus): string {
   }
 }
 
-function formatCount(count: number, singular: string, plural: string): string {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
+// Keep for TS compatibility (used by RoutineCard internally)
+const _formatStatus = formatStatus;
+void _formatStatus;

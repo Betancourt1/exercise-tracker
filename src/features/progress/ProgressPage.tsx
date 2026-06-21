@@ -22,6 +22,9 @@ import type {
 } from "../../domain";
 import { loadProgressAnalytics } from "./progressQueries";
 import { BodyMuscleMap, ExerciseVideoSnippet } from "../exerciseVisuals";
+import { ExerciseDetailSheet } from "../exercises/ExerciseDetailSheet";
+import { listSeededAvailableExercises } from "../../data";
+import type { Exercise } from "../../domain";
 
 type ProgressPageProps = {
   onTrain: () => void;
@@ -48,6 +51,16 @@ export function ProgressPage({ onTrain }: ProgressPageProps) {
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
+  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+
+  useEffect(() => {
+    listSeededAvailableExercises()
+      .then((list) => setAllExercises(list))
+      .catch(() => {
+        // ignore
+      });
+  }, []);
 
   useEffect(() => {
     let isCurrent = true;
@@ -217,7 +230,11 @@ export function ProgressPage({ onTrain }: ProgressPageProps) {
           <ExerciseSelector
             exercises={analytics.exerciseDetails}
             selectedExerciseId={selectedExercise?.exerciseId ?? null}
-            onSelectExercise={setSelectedExerciseId}
+            onSelectExercise={(id) => {
+              setSelectedExerciseId(id);
+              const found = allExercises.find((e) => e.id === id);
+              if (found) setDetailExercise(found);
+            }}
           />
           {selectedExercise ? (
             <>
@@ -238,6 +255,12 @@ export function ProgressPage({ onTrain }: ProgressPageProps) {
           )}
         </aside>
       </div>
+
+      <ExerciseDetailSheet
+        exercise={detailExercise}
+        isOpen={detailExercise !== null}
+        onClose={() => setDetailExercise(null)}
+      />
 
       <FormulaHelp />
     </section>

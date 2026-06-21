@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  Check,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
   CircleStop,
-  Dumbbell,
-  RotateCcw,
+  Plus,
   Save,
   Timer,
   X,
@@ -21,6 +20,7 @@ import {
   saveWorkoutDraft,
 } from "../../data";
 import type { SetLog } from "../../domain";
+import { createId, toIsoUtc } from "../../domain";
 import {
   buildWorkoutDraftFromRoutine,
   formatWorkoutDuration,
@@ -31,7 +31,8 @@ import type {
   WorkoutDraftState,
   WorkoutStartRequest,
 } from "./types";
-import { ExerciseVisualPanel } from "../exerciseVisuals";
+import type { WorkoutExerciseGroup } from "./workoutBuilders";
+import type { Exercise } from "../../domain";
 
 type WorkoutPageProps = {
   startRequest: WorkoutStartRequest | null;
@@ -52,21 +53,53 @@ export function WorkoutPage({
   const [emptyReason, setEmptyReason] = useState<EmptyWorkoutReason>("idle");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
   const [restSecondsRemaining, setRestSecondsRemaining] = useState(0);
   const [isResting, setIsResting] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const exerciseGroups = useMemo(
     () => groupWorkoutSetLogs(draft?.setLogs ?? []),
     [draft?.setLogs],
   );
-  const currentGroup = exerciseGroups[currentGroupIndex] ?? exerciseGroups[0] ?? null;
   const completedSetCount = draft?.setLogs.filter((setLog) => setLog.completed).length ?? 0;
+  const totalVolumeKg = draft?.setLogs
+    .filter((s) => s.completed && s.weightKg != null && s.reps != null)
+    .reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0) ?? 0;
   const hasValidCompletedSeries = draft?.setLogs.some(isValidCompletedSeries) ?? false;
-  const currentRestTarget = currentGroup?.targetSnapshot?.restSeconds ?? 60;
 
+  // Elapsed timer
+  useEffect(() => {
+    if (!draft) return undefined;
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [draft]);
+
+  // Rest timer
+  useEffect(() => {
+    if (!isResting) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setRestSecondsRemaining((currentSeconds) => {
+        if (currentSeconds <= 1) {
+          setIsResting(false);
+          return 0;
+        }
+        return currentSeconds - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isResting]);
+
+  // Load existing draft (no startRequest)
   useEffect(() => {
     let isCurrent = true;
 
@@ -81,9 +114,7 @@ export function WorkoutPage({
         if (!isCurrent) {
           return;
         }
-
         setDraft(restoredDraft);
-        setEmptyReason(restoredDraft ? "idle" : "idle");
       } catch {
         if (isCurrent) {
           setEmptyReason("load-error");
@@ -102,6 +133,7 @@ export function WorkoutPage({
     };
   }, [startRequest]);
 
+  // Start new workout from a routine
   useEffect(() => {
     let isCurrent = true;
 
@@ -113,13 +145,13 @@ export function WorkoutPage({
       setIsLoading(true);
       setCompletionSummary(null);
       setShowDiscardConfirm(false);
+      setElapsedSeconds(0);
 
       try {
         const existingDraft = await getLatestInProgressWorkoutDraft();
         if (existingDraft) {
           if (isCurrent) {
             setDraft(existingDraft);
-            setCurrentGroupIndex(0);
             setEmptyReason("idle");
             onWorkoutChanged?.();
           }
@@ -151,7 +183,6 @@ export function WorkoutPage({
 
         if (isCurrent) {
           setDraft(persistedDraft);
-          setCurrentGroupIndex(0);
           setEmptyReason("idle");
           onWorkoutChanged?.();
         }
@@ -173,36 +204,6 @@ export function WorkoutPage({
       isCurrent = false;
     };
   }, [startRequest]);
-
-  useEffect(() => {
-    if (currentGroupIndex >= exerciseGroups.length) {
-      setCurrentGroupIndex(Math.max(0, exerciseGroups.length - 1));
-    }
-  }, [currentGroupIndex, exerciseGroups.length]);
-
-  useEffect(() => {
-    if (!isResting) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setRestSecondsRemaining((currentSeconds) => {
-        if (currentSeconds <= 1) {
-          setIsResting(false);
-          return 0;
-        }
-
-        return currentSeconds - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, [isResting]);
-
-  useEffect(() => {
-    setIsResting(false);
-    setRestSecondsRemaining(0);
-  }, [currentGroup?.key]);
 
   function updateSetLog(setLogId: string, updates: Partial<SetLog>) {
     setDraft((currentDraft) => {
@@ -228,6 +229,85 @@ export function WorkoutPage({
     });
   }
 
+  function addSetToExercise(group: WorkoutExerciseGroup) {
+    setDraft((currentDraft) => {
+      if (!currentDraft) return currentDraft;
+
+      // Find the last set of this exercise group
+      const lastSet = group.setLogs[group.setLogs.length - 1];
+      if (!lastSet) return currentDraft;
+
+      const maxSetIndex = Math.max(...currentDraft.setLogs.map((s) => s.setIndex), 0);
+
+      const newSetLog: SetLog = {
+        id: createId(),
+        sessionId: currentDraft.session.id,
+        exerciseId: lastSet.exerciseId,
+        routineExerciseId: lastSet.routineExerciseId,
+        exerciseNameSnapshot: lastSet.exerciseNameSnapshot,
+        guideSnapshot: lastSet.guideSnapshot,
+        setIndex: maxSetIndex + 1,
+        weightKg: lastSet.weightKg,
+        reps: lastSet.reps,
+        rir: lastSet.rir,
+        completed: false,
+        completedAt: null,
+        targetSnapshot: lastSet.targetSnapshot,
+        notes: "",
+      };
+
+      const updatedSetLogs = [...currentDraft.setLogs, newSetLog];
+      void saveWorkoutDraft(currentDraft.session.id, updatedSetLogs);
+
+      return {
+        ...currentDraft,
+        setLogs: updatedSetLogs,
+      };
+    });
+  }
+
+  function addExerciseToWorkout(exercise: Exercise) {
+    setDraft((currentDraft) => {
+      if (!currentDraft) return currentDraft;
+
+      const maxSetIndex = Math.max(...currentDraft.setLogs.map((s) => s.setIndex), 0);
+
+      const newSetLog: SetLog = {
+        id: createId(),
+        sessionId: currentDraft.session.id,
+        exerciseId: exercise.id,
+        routineExerciseId: null,
+        exerciseNameSnapshot: exercise.name,
+        guideSnapshot: {
+          id: exercise.id,
+          name: exercise.name,
+          equipmentDetail: exercise.equipmentDetail,
+          primaryMuscles: exercise.primaryMuscles,
+          secondaryMuscles: exercise.secondaryMuscles,
+          guide: exercise.guide,
+        },
+        setIndex: maxSetIndex + 1,
+        weightKg: null,
+        reps: null,
+        rir: null,
+        completed: false,
+        completedAt: null,
+        targetSnapshot: null,
+        notes: "",
+      };
+
+      const updatedSetLogs = [...currentDraft.setLogs, newSetLog];
+      void saveWorkoutDraft(currentDraft.session.id, updatedSetLogs);
+
+      return {
+        ...currentDraft,
+        setLogs: updatedSetLogs,
+      };
+    });
+
+    setIsPickerOpen(false);
+  }
+
   async function finishWorkout() {
     if (!draft) {
       return;
@@ -235,10 +315,12 @@ export function WorkoutPage({
 
     if (!hasValidCompletedSeries) {
       setFinishError("Completa al menos una serie con kg y repeticiones válidas.");
+      setShowFinishConfirm(false);
       return;
     }
 
     setIsSaving(true);
+    setShowFinishConfirm(false);
     try {
       const result = await completeWorkoutSession(draft.session.id, draft.setLogs);
       if (result) {
@@ -273,22 +355,24 @@ export function WorkoutPage({
     }
   }
 
-  function startRestTimer() {
-    setRestSecondsRemaining(currentRestTarget);
+  function startRestTimer(restSeconds: number) {
+    setRestSecondsRemaining(restSeconds);
     setIsResting(true);
   }
 
   if (isLoading) {
     return (
-      <section className="page-section workout-page">
-        <WorkoutHeader title="Entrenamiento" />
-        <article className="panel">
-          <div className="empty-state">
-            <strong>Cargando entrenamiento</strong>
-            <p>Buscando una sesión activa en los datos locales.</p>
+      <div className="workout-active">
+        <div className="workout-topbar">
+          <div className="workout-topbar-left">
+            <span className="workout-topbar-title">Entrenamiento</span>
           </div>
-        </article>
-      </section>
+        </div>
+        <div className="empty-state" style={{ margin: "48px auto" }}>
+          <strong>Cargando entrenamiento</strong>
+          <p>Buscando una sesión activa en los datos locales.</p>
+        </div>
+      </div>
     );
   }
 
@@ -302,7 +386,7 @@ export function WorkoutPage({
     );
   }
 
-  if (!draft || !currentGroup) {
+  if (!draft || exerciseGroups.length === 0) {
     return (
       <WorkoutEmptyView
         reason={emptyReason}
@@ -312,177 +396,151 @@ export function WorkoutPage({
     );
   }
 
+  const sessionName =
+    draft.session.routineDayLabelSnapshot
+      ? `${draft.session.routineNameSnapshot ?? "Entreno"} · ${draft.session.routineDayLabelSnapshot}`
+      : draft.session.routineNameSnapshot ?? "Entreno";
+
   return (
-    <section className="page-section workout-page">
-      <WorkoutHeader title="Entrenamiento activo" />
-
-      <div className="workout-status-strip">
-        <div>
-          <span>Rutina</span>
-          <strong>{draft.session.routineNameSnapshot}</strong>
-        </div>
-        <div>
-          <span>Día</span>
-          <strong>{draft.session.routineDayLabelSnapshot ?? "Sesión"}</strong>
-        </div>
-        <div>
-          <span>Series marcadas</span>
-          <strong>{completedSetCount}</strong>
-        </div>
-      </div>
-
-      <div className="workout-layout">
-        <aside className="workout-queue-panel">
-          <p className="panel-label">Cola</p>
-          <div className="workout-queue">
-            {exerciseGroups.map((group, index) => (
-              <button
-                key={group.key}
-                type="button"
-                data-active={index === currentGroupIndex}
-                onClick={() => setCurrentGroupIndex(index)}
-              >
-                <strong>{group.exerciseName}</strong>
-                <span>
-                  {group.setLogs.filter((setLog) => setLog.completed).length}/
-                  {group.setLogs.length} series
-                </span>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <main className="workout-main-panel">
-          <div className="workout-current-header">
-            <div>
-              <p className="panel-label">Ejercicio actual</p>
-              <h2>{currentGroup.exerciseName}</h2>
-              <p className="muted">
-                Objetivo {currentGroup.targetSnapshot?.targetSets ?? currentGroup.setLogs.length}{" "}
-                series · {currentGroup.targetSnapshot?.targetRepsMin ?? "-"}-
-                {currentGroup.targetSnapshot?.targetRepsMax ?? "-"} reps · descanso{" "}
-                {currentRestTarget}s
-              </p>
-            </div>
-            <div className="workout-step-actions">
-              <button
-                className="icon-button"
-                type="button"
-                aria-label="Ejercicio anterior"
-                disabled={currentGroupIndex === 0}
-                onClick={() => setCurrentGroupIndex((index) => Math.max(0, index - 1))}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label="Siguiente ejercicio"
-                disabled={currentGroupIndex >= exerciseGroups.length - 1}
-                onClick={() =>
-                  setCurrentGroupIndex((index) =>
-                    Math.min(exerciseGroups.length - 1, index + 1),
-                  )
-                }
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-
-          <div className="workout-set-list">
-            {currentGroup.setLogs.map((setLog, index) => (
-              <WorkoutSetRow
-                key={setLog.id}
-                setLog={setLog}
-                label={`Serie ${index + 1}`}
-                onUpdate={updateSetLog}
-              />
-            ))}
-          </div>
-
-          <div className="workout-rest-panel">
-            <div>
-              <p className="panel-label">Descanso</p>
-              <strong>
-                {isResting
-                  ? formatWorkoutDuration(restSecondsRemaining)
-                  : `${currentRestTarget}s sugeridos`}
-              </strong>
-            </div>
-            <div className="button-row compact-actions">
-              <button className="secondary-button" type="button" onClick={startRestTimer}>
-                <Timer size={16} />
-                Iniciar
-              </button>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => {
-                  setIsResting(false);
-                  setRestSecondsRemaining(0);
-                }}
-              >
-                <RotateCcw size={16} />
-                Reiniciar
-              </button>
-            </div>
-          </div>
-        </main>
-
-        <aside className="workout-guide-panel">
-          <p className="panel-label">Guía</p>
-          <h2>{currentGroup.guideSnapshot?.name ?? currentGroup.exerciseName}</h2>
-          {currentGroup.guideSnapshot ? (
-            <div className="workout-guide-sections">
-              <ExerciseVisualPanel exercise={currentGroup.guideSnapshot} compact />
-              {currentGroup.guideSnapshot.equipmentDetail ? (
-                <GuideSection
-                  title="Estación"
-                  items={[currentGroup.guideSnapshot.equipmentDetail]}
-                />
-              ) : null}
-              <GuideSection title="Preparación" items={currentGroup.guideSnapshot.guide.setup} />
-              <GuideSection title="Técnica" items={currentGroup.guideSnapshot.guide.technique} />
-              <GuideSection
-                title="Errores comunes"
-                items={currentGroup.guideSnapshot.guide.commonMistakes}
-              />
-            </div>
-          ) : (
-            <p className="muted">Guía no disponible para este ejercicio guardado.</p>
-          )}
-        </aside>
-      </div>
-
-      <div className="workout-bottom-bar">
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={() => setShowDiscardConfirm(true)}
-        >
-          <X size={16} />
-          Descartar
-        </button>
-        <div className="workout-finish-control">
-          {!hasValidCompletedSeries || finishError ? (
-            <p className="workout-finish-hint">
-              {finishError ?? "Completa al menos una serie válida para finalizar."}
-            </p>
-          ) : null}
+    <div className="workout-active">
+      {/* Top bar */}
+      <div className="workout-topbar">
+        <div className="workout-topbar-left">
           <button
-            className="primary-button training"
             type="button"
-            onClick={finishWorkout}
-            disabled={isSaving || !hasValidCompletedSeries}
+            aria-label="Minimizar"
+            onClick={() => onExit("today")}
           >
-            <Save size={16} />
-            Finalizar sesión
+            <ChevronDown size={20} />
+          </button>
+          <span className="workout-topbar-title">{sessionName}</span>
+        </div>
+        <div className="workout-topbar-right">
+          <div className="workout-timer">
+            <Timer size={14} />
+            <span>{formatWorkoutDuration(elapsedSeconds)}</span>
+          </div>
+          <button
+            className="workout-finish-btn"
+            type="button"
+            onClick={() => setShowFinishConfirm(true)}
+            disabled={isSaving}
+          >
+            Terminar
           </button>
         </div>
       </div>
 
-      {showDiscardConfirm ? (
+      {/* Metrics strip */}
+      <div className="workout-metrics-strip">
+        <div className="workout-metric">
+          <span>Duración</span>
+          <strong>{formatWorkoutDuration(elapsedSeconds)}</strong>
+        </div>
+        <div className="workout-metric">
+          <span>Volumen</span>
+          <strong>{Math.round(totalVolumeKg)} kg</strong>
+        </div>
+        <div className="workout-metric">
+          <span>Series</span>
+          <strong>{completedSetCount}</strong>
+        </div>
+      </div>
+
+      {/* All exercises scroll */}
+      <div className="workout-exercises-scroll">
+        {exerciseGroups.map((group) => (
+          <WorkoutExerciseCard
+            key={group.key}
+            group={group}
+            isResting={isResting}
+            restSecondsRemaining={restSecondsRemaining}
+            onUpdateSetLog={updateSetLog}
+            onAddSet={() => addSetToExercise(group)}
+            onStartRest={startRestTimer}
+            onStopRest={() => { setIsResting(false); setRestSecondsRemaining(0); }}
+          />
+        ))}
+      </div>
+
+      {/* Add exercise FAB */}
+      <button
+        className="add-exercise-fab"
+        type="button"
+        onClick={() => setIsPickerOpen(true)}
+      >
+        <Plus size={18} />
+        Agregar ejercicio
+      </button>
+
+      {/* Exercise Picker */}
+      {isPickerOpen && (
+        <InlineExercisePicker
+          onSelect={addExerciseToWorkout}
+          onClose={() => setIsPickerOpen(false)}
+        />
+      )}
+
+      {/* Finish confirm */}
+      {showFinishConfirm && (
+        <div className="dialog-backdrop" role="presentation">
+          <div className="dialog-card confirm-card" role="dialog" aria-modal="true">
+            <div className="dialog-header">
+              <div>
+                <p className="panel-label">Finalizar sesión</p>
+                <h2>¿Guardar esta sesión?</h2>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Cerrar"
+                onClick={() => setShowFinishConfirm(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="muted">
+              Se guardarán {completedSetCount} series completadas con{" "}
+              {Math.round(totalVolumeKg)} kg de volumen total.
+            </p>
+            {!hasValidCompletedSeries && (
+              <p className="form-error">
+                Completa al menos una serie con kg y repeticiones válidas.
+              </p>
+            )}
+            <div className="dialog-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setShowDiscardConfirm(true)}
+                style={{ marginRight: "auto" }}
+              >
+                <X size={15} />
+                Descartar
+              </button>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setShowFinishConfirm(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="primary-button training"
+                type="button"
+                onClick={finishWorkout}
+                disabled={isSaving || !hasValidCompletedSeries}
+              >
+                <Save size={15} />
+                Guardar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discard confirm */}
+      {showDiscardConfirm && (
         <div className="dialog-backdrop" role="presentation">
           <div className="dialog-card confirm-card" role="dialog" aria-modal="true">
             <div className="dialog-header">
@@ -521,89 +579,312 @@ export function WorkoutPage({
             </div>
           </div>
         </div>
-      ) : null}
-    </section>
+      )}
+
+      {finishError && (
+        <div
+          className="toast"
+          role="alert"
+          style={{ cursor: "pointer" }}
+          onClick={() => setFinishError(null)}
+        >
+          <span>{finishError}</span>
+        </div>
+      )}
+    </div>
   );
 }
+
+// ─── Exercise Card ─────────────────────────────────────────────────────────────
+
+function WorkoutExerciseCard({
+  group,
+  isResting,
+  restSecondsRemaining,
+  onUpdateSetLog,
+  onAddSet,
+  onStartRest,
+  onStopRest,
+}: {
+  group: WorkoutExerciseGroup;
+  isResting: boolean;
+  restSecondsRemaining: number;
+  onUpdateSetLog: (setLogId: string, updates: Partial<SetLog>) => void;
+  onAddSet: () => void;
+  onStartRest: (seconds: number) => void;
+  onStopRest: () => void;
+}) {
+  const initials = group.exerciseName
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  const restSeconds = group.targetSnapshot?.restSeconds ?? 60;
+  const isCardio =
+    group.guideSnapshot?.guide?.setup?.some((s) =>
+      /cardio|correr|trotar|bicicleta|elíptica/i.test(s),
+    ) ?? false;
+
+  return (
+    <div className="workout-exercise-card">
+      {/* Header */}
+      <div className="exercise-card-header">
+        <div className="exercise-avatar">{initials}</div>
+        <span className="exercise-card-name">{group.exerciseName}</span>
+        {group.targetSnapshot && (
+          <span
+            style={{
+              fontSize: "0.75rem",
+              color: "var(--muted)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {group.targetSnapshot.targetSets}×{group.targetSnapshot.targetRepsMin}
+            {group.targetSnapshot.targetRepsMax !== group.targetSnapshot.targetRepsMin
+              ? `-${group.targetSnapshot.targetRepsMax}`
+              : ""}
+          </span>
+        )}
+      </div>
+
+      {/* Rest indicator */}
+      <div className="exercise-rest-indicator">
+        <Timer size={13} />
+        {isResting
+          ? `Descansando: ${formatWorkoutDuration(restSecondsRemaining)}`
+          : `Descanso: ${restSeconds}s`}
+        {isResting ? (
+          <button
+            type="button"
+            onClick={onStopRest}
+            style={{ marginLeft: "auto", color: "var(--muted)", fontSize: "0.75rem" }}
+          >
+            Detener
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onStartRest(restSeconds)}
+            style={{ marginLeft: "auto", color: "var(--accent-text)", fontSize: "0.75rem" }}
+          >
+            Iniciar
+          </button>
+        )}
+      </div>
+
+      {/* Sets table */}
+      <table className="sets-table">
+        <thead className="sets-table-head">
+          <tr>
+            <th>SERIE</th>
+            <th>ANTERIOR</th>
+            {isCardio ? (
+              <>
+                <th>KM</th>
+                <th>TIEMPO</th>
+              </>
+            ) : (
+              <>
+                <th>KG</th>
+                <th>REPS</th>
+              </>
+            )}
+            <th>✓</th>
+          </tr>
+        </thead>
+        <tbody>
+          {group.setLogs.map((setLog, index) => (
+            <WorkoutSetRow
+              key={setLog.id}
+              setLog={setLog}
+              setNumber={index + 1}
+              isCardio={isCardio}
+              onUpdate={onUpdateSetLog}
+            />
+          ))}
+        </tbody>
+      </table>
+
+      {/* Add set */}
+      <button className="add-set-btn" type="button" onClick={onAddSet}>
+        <Plus size={14} />
+        Agregar Serie
+      </button>
+    </div>
+  );
+}
+
+// ─── Set Row ───────────────────────────────────────────────────────────────────
 
 function WorkoutSetRow({
   setLog,
-  label,
+  setNumber,
+  isCardio,
   onUpdate,
 }: {
   setLog: SetLog;
-  label: string;
+  setNumber: number;
+  isCardio: boolean;
   onUpdate: (setLogId: string, updates: Partial<SetLog>) => void;
 }) {
+  const previousText = setLog.weightKg != null && setLog.reps != null
+    ? `${setLog.weightKg}kg×${setLog.reps}`
+    : "—";
+
   return (
-    <article className="workout-set-row">
-      <strong>{label}</strong>
-      <NumberInput
-        label="kg"
-        value={setLog.weightKg}
-        min={0}
-        onChange={(weightKg) => onUpdate(setLog.id, { weightKg })}
-      />
-      <NumberInput
-        label="reps"
-        value={setLog.reps}
-        min={0}
-        onChange={(reps) => onUpdate(setLog.id, { reps })}
-      />
-      <NumberInput
-        label="RIR"
-        value={setLog.rir}
-        min={0}
-        onChange={(rir) => onUpdate(setLog.id, { rir })}
-      />
-      <label className="set-complete-control">
+    <tr className={`set-row${setLog.completed ? " completed" : ""}`}>
+      <td>{setNumber}</td>
+      <td>
+        <span className="set-previous">{previousText}</span>
+      </td>
+      <td>
         <input
-          type="checkbox"
-          checked={setLog.completed}
-          onChange={(event) =>
+          className="set-number-input"
+          type="number"
+          min={0}
+          step={isCardio ? 0.1 : 0.5}
+          placeholder={isCardio ? "0" : "kg"}
+          value={setLog.weightKg ?? ""}
+          onChange={(e) => {
+            const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+            onUpdate(setLog.id, { weightKg: v });
+          }}
+        />
+      </td>
+      <td>
+        <input
+          className="set-number-input"
+          type="number"
+          min={0}
+          step={1}
+          placeholder={isCardio ? "min" : "reps"}
+          value={setLog.reps ?? ""}
+          onChange={(e) => {
+            const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+            onUpdate(setLog.id, { reps: v });
+          }}
+        />
+      </td>
+      <td>
+        <button
+          className={`set-check-btn${setLog.completed ? " checked" : ""}`}
+          type="button"
+          aria-label={setLog.completed ? "Serie completada" : "Marcar como completada"}
+          onClick={() =>
             onUpdate(setLog.id, {
-              completed: event.target.checked,
-              completedAt: event.target.checked ? new Date().toISOString() : null,
+              completed: !setLog.completed,
+              completedAt: !setLog.completed ? new Date().toISOString() : null,
             })
           }
-        />
-        <span>Hecho</span>
-      </label>
-    </article>
+        >
+          {setLog.completed && <Check size={14} />}
+        </button>
+      </td>
+    </tr>
   );
 }
 
-function NumberInput({
-  label,
-  value,
-  min,
-  onChange,
+// ─── Inline Exercise Picker ────────────────────────────────────────────────────
+
+function InlineExercisePicker({
+  onSelect,
+  onClose,
 }: {
-  label: string;
-  value: number | null;
-  min: number;
-  onChange: (value: number | null) => void;
+  onSelect: (exercise: Exercise) => void;
+  onClose: () => void;
 }) {
-  return (
-    <label className="workout-number-field">
-      <span>{label}</span>
-      <input
-        type="number"
-        min={min}
-        value={value ?? ""}
-        onChange={(event) => {
-          if (event.target.value === "") {
-            onChange(null);
-            return;
-          }
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-          const parsedValue = Number(event.target.value);
-          onChange(Number.isFinite(parsedValue) ? Math.max(min, parsedValue) : null);
-        }}
-      />
-    </label>
+  useEffect(() => {
+    let isCurrent = true;
+    listExercises()
+      .then((list) => {
+        if (isCurrent) {
+          setExercises(list);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) setIsLoading(false);
+      });
+    return () => { isCurrent = false; };
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return exercises;
+    return exercises.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.primaryMuscles.some((m) => m.toLowerCase().includes(q)),
+    );
+  }, [exercises, query]);
+
+  return (
+    <div className="exercise-picker-sheet">
+      <div className="picker-header">
+        <button className="picker-header-action" type="button" onClick={onClose}>
+          Cancelar
+        </button>
+        <span className="picker-header-title">Agregar Ejercicio</span>
+        <div style={{ minWidth: 64 }} />
+      </div>
+
+      <div className="picker-search-wrap">
+        <label className="search-box">
+          <span style={{ color: "var(--muted)", lineHeight: 1 }}>🔍</span>
+          <input
+            placeholder="Buscar ejercicio"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+          />
+        </label>
+      </div>
+
+      <div className="picker-body">
+        {isLoading ? (
+          <div className="empty-state">
+            <strong>Cargando ejercicios...</strong>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="empty-state">
+            <strong>Sin resultados</strong>
+            <p>Ajusta la búsqueda.</p>
+          </div>
+        ) : (
+          <>
+            <div className="picker-section-label">Ejercicios ({filtered.length})</div>
+            {filtered.map((exercise) => (
+              <button
+                key={exercise.id}
+                className="picker-exercise-row"
+                type="button"
+                onClick={() => onSelect(exercise)}
+              >
+                <div className="exercise-avatar" style={{ flexShrink: 0 }}>
+                  {exercise.name.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="picker-exercise-info">
+                  <span className="picker-exercise-name">{exercise.name}</span>
+                  <span className="picker-exercise-muscle">
+                    {exercise.primaryMuscles.join(", ")}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
+
+// ─── Summary & Empty Views ─────────────────────────────────────────────────────
 
 function WorkoutSummaryView({
   summary,
@@ -618,7 +899,13 @@ function WorkoutSummaryView({
 
   return (
     <section className="page-section workout-page">
-      <WorkoutHeader title="Sesión guardada" />
+      <header className="page-title">
+        <div>
+          <p>Entrenamiento</p>
+          <h1 id="page-title">Sesión guardada</h1>
+        </div>
+        <CheckCircle2 size={24} style={{ color: "var(--success)" }} />
+      </header>
 
       <div className="metric-grid">
         <article className="metric-item" data-tone="training">
@@ -641,7 +928,6 @@ function WorkoutSummaryView({
             <p className="panel-label">Resumen</p>
             <h2>{summary.session.routineNameSnapshot}</h2>
           </div>
-          <CheckCircle2 size={20} className="success-icon" />
         </div>
         <div className="summary-exercise-list">
           {groups.map((group) => (
@@ -655,7 +941,7 @@ function WorkoutSummaryView({
         </div>
       </article>
 
-      <div className="button-row">
+      <div className="button-row" style={{ marginTop: 16 }}>
         <button className="primary-button training" type="button" onClick={onToday}>
           Volver a Hoy
         </button>
@@ -698,9 +984,14 @@ function WorkoutEmptyView({
 
   return (
     <section className="page-section workout-page">
-      <WorkoutHeader title="Entrenamiento" />
+      <header className="page-title">
+        <div>
+          <p>Entrenar</p>
+          <h1 id="page-title">Entrenamiento</h1>
+        </div>
+      </header>
       <article className="panel workout-empty-panel">
-        <Icon size={22} />
+        <Icon size={22} style={{ color: "var(--muted)" }} />
         <strong>{copy.title}</strong>
         <p>{copy.body}</p>
         <div className="button-row">
@@ -716,17 +1007,7 @@ function WorkoutEmptyView({
   );
 }
 
-function WorkoutHeader({ title }: { title: string }) {
-  return (
-    <header className="page-title">
-      <div>
-        <p>Entrenar</p>
-        <h1 id="page-title">{title}</h1>
-      </div>
-      <Dumbbell size={22} className="workout-title-icon" />
-    </header>
-  );
-}
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function isValidCompletedSeries(setLog: SetLog): boolean {
   return (
@@ -740,15 +1021,6 @@ function isValidCompletedSeries(setLog: SetLog): boolean {
   );
 }
 
-function GuideSection({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="workout-guide-section">
-      <strong>{title}</strong>
-      <ul>
-        {items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+// Keep toIsoUtc usage to avoid unused import warning
+const _toIsoUtc = toIsoUtc;
+void _toIsoUtc;
