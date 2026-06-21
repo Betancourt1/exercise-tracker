@@ -16,6 +16,13 @@ import {
   Upload,
 } from "lucide-react";
 import { ProgressPage } from "./features/progress/ProgressPage";
+import {
+  ALL_EXERCISE_FILTER_VALUE,
+  filterExerciseLibrary,
+  getExerciseFilterOptions,
+  hasActiveExerciseFilters,
+  type ExerciseLibraryFilters,
+} from "./features/routines/exerciseLibraryFilters";
 import { RoutinesPage } from "./features/routines/RoutinesPage";
 import { loadHighestPriorityActiveRoutine } from "./features/routines/routineQueries";
 import type { RoutineSummary } from "./features/routines/types";
@@ -488,7 +495,12 @@ function TodayPage({
 function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [exerciseFilters, setExerciseFilters] = useState<ExerciseLibraryFilters>({
+    query: "",
+    muscle: ALL_EXERCISE_FILTER_VALUE,
+    equipment: ALL_EXERCISE_FILTER_VALUE,
+    tag: ALL_EXERCISE_FILTER_VALUE,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -525,47 +537,88 @@ function ExercisesPage() {
     };
   }, []);
 
+  const filterOptions = useMemo(() => getExerciseFilterOptions(exercises), [exercises]);
   const filteredExercises = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase("es-MX");
-
-    if (!query) {
-      return exercises;
-    }
-
-    return exercises.filter((exercise) => {
-      const searchText = [
-        exercise.name,
-        ...exercise.primaryMuscles,
-        ...exercise.secondaryMuscles,
-        ...exercise.equipment,
-        ...exercise.tags,
-      ]
-        .join(" ")
-        .toLocaleLowerCase("es-MX");
-
-      return searchText.includes(query);
-    });
-  }, [exercises, searchQuery]);
+    return filterExerciseLibrary(exercises, exerciseFilters);
+  }, [exercises, exerciseFilters]);
+  const activeFilterCount = [
+    exerciseFilters.query.trim(),
+    exerciseFilters.muscle !== ALL_EXERCISE_FILTER_VALUE ? exerciseFilters.muscle : "",
+    exerciseFilters.equipment !== ALL_EXERCISE_FILTER_VALUE
+      ? exerciseFilters.equipment
+      : "",
+    exerciseFilters.tag !== ALL_EXERCISE_FILTER_VALUE ? exerciseFilters.tag : "",
+  ].filter(Boolean).length;
+  const hasActiveFilters = hasActiveExerciseFilters(exerciseFilters);
   const selectedExercise =
-    exercises.find((exercise) => exercise.id === selectedExerciseId) ??
+    filteredExercises.find((exercise) => exercise.id === selectedExerciseId) ??
     filteredExercises[0] ??
     null;
+
+  function updateExerciseFilter(updates: Partial<ExerciseLibraryFilters>) {
+    setExerciseFilters((currentFilters) => ({
+      ...currentFilters,
+      ...updates,
+    }));
+  }
+
+  function clearExerciseFilters() {
+    setExerciseFilters({
+      query: "",
+      muscle: ALL_EXERCISE_FILTER_VALUE,
+      equipment: ALL_EXERCISE_FILTER_VALUE,
+      tag: ALL_EXERCISE_FILTER_VALUE,
+    });
+  }
 
   return (
     <section className="page-section">
       <PageTitle kicker="Ejercicios" title="Biblioteca de ejercicios" />
 
-      <div className="toolbar">
-        <label className="search-box">
-          <Search size={15} />
-          <input
-            placeholder="Buscar ejercicio"
-            aria-label="Buscar ejercicio"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-          />
-        </label>
-        <span className="toolbar-count">{filteredExercises.length} ejercicios</span>
+      <div className="toolbar exercise-browser-toolbar">
+        <div className="exercise-browser-controls">
+          <label className="search-box">
+            <Search size={15} />
+            <input
+              placeholder="Buscar nombre, músculo o equipo"
+              aria-label="Buscar ejercicio"
+              value={exerciseFilters.query}
+              onChange={(event) => updateExerciseFilter({ query: event.target.value })}
+            />
+          </label>
+          <div className="exercise-filter-grid" aria-label="Filtros de ejercicios">
+            <ExerciseFilterSelect
+              label="Músculo"
+              value={exerciseFilters.muscle}
+              options={filterOptions.muscles}
+              onChange={(muscle) => updateExerciseFilter({ muscle })}
+            />
+            <ExerciseFilterSelect
+              label="Equipo"
+              value={exerciseFilters.equipment}
+              options={filterOptions.equipment}
+              onChange={(equipment) => updateExerciseFilter({ equipment })}
+            />
+            <ExerciseFilterSelect
+              label="Tipo"
+              value={exerciseFilters.tag}
+              options={filterOptions.tags}
+              onChange={(tag) => updateExerciseFilter({ tag })}
+            />
+          </div>
+        </div>
+        <div className="exercise-browser-summary">
+          <span className="toolbar-count">
+            {filteredExercises.length} de {exercises.length} ejercicios
+            {activeFilterCount > 0 ? ` · ${activeFilterCount} filtros` : ""}
+          </span>
+          {hasActiveFilters ? (
+            <button className="quiet-button" type="button" onClick={clearExerciseFilters}>
+              <RotateCcw size={13} />
+              Limpiar
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {error ? <p className="form-error">{error}</p> : null}
@@ -593,20 +646,50 @@ function ExercisesPage() {
                   <strong>{exercise.name}</strong>
                   <span>{exercise.primaryMuscles.join(", ")}</span>
                   <span>{exercise.equipment.join(", ")}</span>
-                  <span>{exercise.tags.slice(0, 3).join(", ")}</span>
+                  <span>{exercise.tags.slice(0, 4).join(", ")}</span>
                 </button>
               ))}
             </div>
           ) : (
             <EmptyState
               title="Sin resultados"
-              body="Ajusta la búsqueda por nombre, músculo, equipo o etiqueta."
+              body="Ajusta la búsqueda o limpia los filtros activos."
             />
           )}
         </article>
         <ExerciseGuideCard exercise={selectedExercise} />
       </div>
     </section>
+  );
+}
+
+function ExerciseFilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="exercise-filter-field">
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label={`Filtrar por ${label.toLocaleLowerCase("es-MX")}`}
+      >
+        <option value={ALL_EXERCISE_FILTER_VALUE}>Todos</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
