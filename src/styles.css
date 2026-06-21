@@ -397,16 +397,28 @@ select:focus-visible {
 
 .secondary-button,
 .icon-button {
-  border: 1px solid var(--border);
-  background: var(--surface);
   color: var(--text);
 }
 
 .secondary-button:hover,
-.icon-button:hover,
 .quiet-button:hover {
   border-color: var(--border-strong);
   background: var(--surface-muted);
+}
+
+.secondary-button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.icon-button {
+  border: 0;
+  background: transparent;
+}
+
+.icon-button:hover {
+  background: var(--surface-muted);
+  color: var(--text);
 }
 
 .primary-button:hover,
@@ -428,13 +440,14 @@ select:focus-visible {
   font-weight: 700;
 }
 
-.secondary-button {
-  padding: 0 11px;
-}
-
 .icon-button {
   width: 34px;
+  padding: 0;
   color: var(--muted);
+}
+
+.secondary-button {
+  padding: 0 11px;
 }
 
 .icon-button.danger {
@@ -978,9 +991,7 @@ select:focus-visible {
 }
 
 .builder-section-header span {
-  border-radius: 999px;
-  background: var(--surface-muted);
-  padding: 4px 8px;
+  padding: 0;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
@@ -990,7 +1001,7 @@ select:focus-visible {
 .builder-exercise-list,
 .exercise-library-list {
   display: grid;
-  gap: 8px;
+  gap: 0;
   min-width: 0;
 }
 
@@ -1010,17 +1021,19 @@ select:focus-visible {
   gap: 3px;
   min-height: 48px;
   border-left: 3px solid transparent;
-  border-radius: 6px;
   padding: 8px 10px;
 }
 
-.builder-day-list button:hover,
-.builder-day-list button[data-active="true"] {
+.builder-day-list button:hover {
   background: var(--surface-muted);
 }
 
 .builder-day-list button[data-active="true"] {
   border-left-color: var(--routine);
+}
+
+.builder-day-list button[data-active="true"] strong {
+  color: var(--routine);
 }
 
 .builder-day-list strong,
@@ -1048,10 +1061,14 @@ select:focus-visible {
   display: grid;
   gap: 10px;
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  background: var(--surface);
+  border: 0;
+  padding: 0 0 14px;
+  background: transparent;
+}
+
+.builder-exercise-row + .builder-exercise-row {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
 }
 
 .builder-exercise-title,
@@ -1098,13 +1115,29 @@ select:focus-visible {
   width: 100%;
   min-width: 0;
   min-height: 32px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 2px 4px;
   color: var(--text);
-  background: var(--surface);
+  background: transparent;
   font-size: 13px;
   font-weight: 500;
+}
+
+.builder-number-field input,
+.workout-number-field input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.builder-number-field input::-webkit-outer-spin-button,
+.builder-number-field input::-webkit-inner-spin-button,
+.workout-number-field input::-webkit-outer-spin-button,
+.workout-number-field input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .builder-notes-field {
@@ -1114,6 +1147,16 @@ select:focus-visible {
 .builder-search {
   width: 100%;
   min-width: 0;
+  min-height: 34px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 0 6px;
+  background: transparent;
+}
+
+.builder-search:focus-within {
+  border-bottom-color: var(--training);
 }
 
 .exercise-filter-grid {
@@ -1145,6 +1188,14 @@ select:focus-visible {
   font-weight: 600;
 }
 
+.routine-builder-card .exercise-filter-field select {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 18px 5px 0;
+  background: transparent;
+}
+
 .exercise-filter-summary {
   display: flex;
   align-items: center;
@@ -1163,23 +1214,27 @@ select:focus-visible {
 
 .exercise-library-row {
   align-items: center;
-  border: 1px solid transparent;
-  border-radius: 7px;
+  border-top: 1px solid var(--border);
   min-height: 58px;
-  padding: 8px 0 8px 10px;
+  padding: 8px 0;
   transition:
     background 150ms ease,
-    border-color 150ms ease;
+    color 150ms ease;
 }
 
-.exercise-library-row:hover,
-.exercise-library-row[data-active="true"] {
-  border-color: rgba(23, 122, 59, 0.1);
+.exercise-library-row:first-child {
+  border-top: 0;
+}
+
+.exercise-library-row:hover {
   background: var(--surface-muted);
 }
 
+.exercise-library-row[data-active="true"] .library-main-button strong {
+  color: var(--routine);
+}
+
 .library-main-button {
-  border-radius: 6px;
   padding: 7px 8px 7px 0;
 }
 
@@ -1249,10 +1304,9 @@ select:focus-visible {
   gap: 6px;
   min-height: 104px;
   place-items: center;
-  border: 1px dashed var(--border-strong);
-  border-radius: 8px;
+  border: 0;
   padding: 16px;
-  background: var(--surface-raised);
+  background: transparent;
   text-align: center;
 }
 
@@ -1271,6 +1325,30 @@ select:focus-visible {
 .builder-actions {
   border-top: 1px solid var(--border);
   padding-top: 14px;
+}
+
+.routine-builder-card .builder-actions .secondary-button,
+.routine-builder-card .builder-actions .primary-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.routine-builder-card .builder-actions .secondary-button {
+  color: var(--muted);
+}
+
+.routine-builder-card .builder-actions .primary-button {
+  color: var(--routine);
+}
+
+.routine-builder-card .builder-actions .secondary-button:hover,
+.routine-builder-card .builder-actions .primary-button:hover {
+  background: transparent;
+  transform: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .workout-page {
@@ -1452,11 +1530,12 @@ select:focus-visible {
   width: 100%;
   min-width: 0;
   min-height: 32px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 2px 4px;
   color: var(--text);
-  background: var(--surface);
+  background: transparent;
   font-size: 13px;
 }
 
@@ -1835,6 +1914,12 @@ select:focus-visible {
   line-height: 1.35;
 }
 
+.routine-builder-card .builder-equipment-detail {
+  border-left: 0;
+  padding: 0;
+  background: transparent;
+}
+
 .exercise-guide-block {
   display: grid;
   gap: 6px;
@@ -1906,6 +1991,11 @@ select:focus-visible {
   gap: 12px;
   margin-top: 12px;
   padding-top: 12px;
+}
+
+.routine-builder-card .exercise-visuals[data-compact="true"] {
+  margin-top: 10px;
+  padding-top: 10px;
 }
 
 .body-muscle-map,
@@ -2010,6 +2100,10 @@ select:focus-visible {
   color: var(--training);
 }
 
+.routine-builder-card .muscle-chip-list {
+  display: none;
+}
+
 .youtube-snippet-card {
   display: grid;
   grid-template-columns: 78px minmax(0, 1fr) auto;
@@ -2027,6 +2121,25 @@ select:focus-visible {
 .youtube-snippet-card:hover {
   border-color: rgba(49, 95, 187, 0.36);
   background: #f2f6ff;
+}
+
+.routine-builder-card .youtube-snippet-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.routine-builder-card .youtube-snippet-card:hover {
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.routine-builder-card .youtube-snippet-thumb {
+  display: none;
 }
 
 .youtube-snippet-thumb {
