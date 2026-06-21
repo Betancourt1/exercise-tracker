@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
+  RotateCcw,
   Plus,
   Save,
   Search,
@@ -18,6 +19,13 @@ import {
   removeRoutineExerciseFromDay,
 } from "./routineBuilders";
 import type { RoutineSummary } from "./types";
+import {
+  ALL_EXERCISE_FILTER_VALUE,
+  filterExerciseLibrary,
+  getExerciseFilterOptions,
+  hasActiveExerciseFilters,
+  type ExerciseLibraryFilters,
+} from "./exerciseLibraryFilters";
 
 type RoutineBuilderDialogProps = {
   summary: RoutineSummary;
@@ -35,7 +43,12 @@ export function RoutineBuilderDialog({
     () => summary.routineExercises,
   );
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
-  const [exerciseQuery, setExerciseQuery] = useState("");
+  const [exerciseFilters, setExerciseFilters] = useState<ExerciseLibraryFilters>({
+    query: "",
+    muscle: ALL_EXERCISE_FILTER_VALUE,
+    equipment: ALL_EXERCISE_FILTER_VALUE,
+    tag: ALL_EXERCISE_FILTER_VALUE,
+  });
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(
     summary.routineExercises[0]?.exerciseId ?? null,
   );
@@ -93,31 +106,25 @@ export function RoutineBuilderDialog({
         : [],
     [activeDayId, routineExercises],
   );
+  const filterOptions = useMemo(
+    () => getExerciseFilterOptions(exerciseLibrary),
+    [exerciseLibrary],
+  );
   const filteredExercises = useMemo(() => {
-    const query = exerciseQuery.trim().toLocaleLowerCase("es-MX");
-
-    if (!query) {
-      return exerciseLibrary;
-    }
-
-    return exerciseLibrary.filter((exercise) => {
-      const searchText = [
-        exercise.name,
-        ...exercise.primaryMuscles,
-        ...exercise.secondaryMuscles,
-        ...exercise.equipment,
-        ...exercise.tags,
-      ]
-        .join(" ")
-        .toLocaleLowerCase("es-MX");
-
-      return searchText.includes(query);
-    });
-  }, [exerciseLibrary, exerciseQuery]);
+    return filterExerciseLibrary(exerciseLibrary, exerciseFilters);
+  }, [exerciseLibrary, exerciseFilters]);
+  const activeFilterCount = [
+    exerciseFilters.query.trim(),
+    exerciseFilters.muscle !== ALL_EXERCISE_FILTER_VALUE ? exerciseFilters.muscle : "",
+    exerciseFilters.equipment !== ALL_EXERCISE_FILTER_VALUE
+      ? exerciseFilters.equipment
+      : "",
+    exerciseFilters.tag !== ALL_EXERCISE_FILTER_VALUE ? exerciseFilters.tag : "",
+  ].filter(Boolean).length;
+  const hasActiveFilters = hasActiveExerciseFilters(exerciseFilters);
   const guideExercise =
-    (selectedExerciseId ? exerciseById.get(selectedExerciseId) : null) ??
+    filteredExercises.find((exercise) => exercise.id === selectedExerciseId) ??
     filteredExercises[0] ??
-    exerciseLibrary[0] ??
     null;
 
   function addExercise(exercise: Exercise) {
@@ -135,6 +142,22 @@ export function RoutineBuilderDialog({
       }),
     ]);
     setSelectedExerciseId(exercise.id);
+  }
+
+  function updateExerciseFilter(updates: Partial<ExerciseLibraryFilters>) {
+    setExerciseFilters((currentFilters) => ({
+      ...currentFilters,
+      ...updates,
+    }));
+  }
+
+  function clearExerciseFilters() {
+    setExerciseFilters({
+      query: "",
+      muscle: ALL_EXERCISE_FILTER_VALUE,
+      equipment: ALL_EXERCISE_FILTER_VALUE,
+      tag: ALL_EXERCISE_FILTER_VALUE,
+    });
   }
 
   function updateRoutineExercise(
@@ -301,12 +324,44 @@ export function RoutineBuilderDialog({
             <label className="search-box builder-search">
               <Search size={15} />
               <input
-                placeholder="Buscar ejercicio"
+                placeholder="Buscar nombre, músculo o equipo"
                 aria-label="Buscar ejercicio"
-                value={exerciseQuery}
-                onChange={(event) => setExerciseQuery(event.target.value)}
+                value={exerciseFilters.query}
+                onChange={(event) => updateExerciseFilter({ query: event.target.value })}
               />
             </label>
+            <div className="exercise-filter-grid" aria-label="Filtros de ejercicios">
+              <ExerciseFilterSelect
+                label="Músculo"
+                value={exerciseFilters.muscle}
+                options={filterOptions.muscles}
+                onChange={(muscle) => updateExerciseFilter({ muscle })}
+              />
+              <ExerciseFilterSelect
+                label="Equipo"
+                value={exerciseFilters.equipment}
+                options={filterOptions.equipment}
+                onChange={(equipment) => updateExerciseFilter({ equipment })}
+              />
+              <ExerciseFilterSelect
+                label="Tipo"
+                value={exerciseFilters.tag}
+                options={filterOptions.tags}
+                onChange={(tag) => updateExerciseFilter({ tag })}
+              />
+            </div>
+            <div className="exercise-filter-summary">
+              <span>
+                {filteredExercises.length} de {exerciseLibrary.length} ejercicios
+                {activeFilterCount > 0 ? ` · ${activeFilterCount} filtros` : ""}
+              </span>
+              {hasActiveFilters ? (
+                <button className="quiet-button" type="button" onClick={clearExerciseFilters}>
+                  <RotateCcw size={13} />
+                  Limpiar
+                </button>
+              ) : null}
+            </div>
 
             {isLibraryLoading ? (
               <BuilderEmptyState
@@ -325,6 +380,9 @@ export function RoutineBuilderDialog({
                     >
                       <strong>{exercise.name}</strong>
                       <span>{exercise.primaryMuscles.join(", ")}</span>
+                      <small>
+                        {[exercise.equipment[0], exercise.tags[0]].filter(Boolean).join(" · ")}
+                      </small>
                     </button>
                     <button
                       className="icon-button"
@@ -340,7 +398,7 @@ export function RoutineBuilderDialog({
             ) : (
               <BuilderEmptyState
                 title="Sin resultados"
-                body="Ajusta la búsqueda por nombre, músculo o equipo."
+                body="Ajusta la búsqueda o limpia los filtros activos."
               />
             )}
 
@@ -366,6 +424,36 @@ export function RoutineBuilderDialog({
         </div>
       </div>
     </div>
+  );
+}
+
+function ExerciseFilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="exercise-filter-field">
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label={`Filtrar por ${label.toLocaleLowerCase("es-MX")}`}
+      >
+        <option value={ALL_EXERCISE_FILTER_VALUE}>Todos</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

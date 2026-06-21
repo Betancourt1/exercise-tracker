@@ -48,7 +48,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -57,13 +58,15 @@ button {
 }
 
 button:disabled,
-input:disabled {
+input:disabled,
+select:disabled {
   cursor: not-allowed;
   opacity: 0.58;
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--training);
   outline-offset: 2px;
 }
@@ -163,6 +166,9 @@ input:focus-visible {
 }
 
 .quiet-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-height: 30px;
   border-radius: 6px;
   padding: 0 8px;
@@ -1085,6 +1091,46 @@ input:focus-visible {
   min-width: 0;
 }
 
+.exercise-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.exercise-filter-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.exercise-filter-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.exercise-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .exercise-library-list {
   max-height: 242px;
   overflow-y: auto;
@@ -1105,6 +1151,20 @@ input:focus-visible {
 .library-main-button {
   border-radius: 6px;
   padding: 6px 8px;
+}
+
+.library-main-button small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-main-button strong {
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .library-main-button:hover,
@@ -2479,12 +2539,16 @@ input:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .exercise-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
   .builder-notes-field {
     grid-column: 1 / -1;
   }
 
   .exercise-library-list {
-    max-height: none;
+    max-height: 320px;
   }
 
   .day-grid {
