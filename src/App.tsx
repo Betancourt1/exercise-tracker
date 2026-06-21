@@ -36,7 +36,7 @@ import {
   stringifyDatabaseExport,
 } from "./data";
 import type { DatabaseExport } from "./data";
-import type { Exercise } from "./domain";
+import { formatExerciseEquipmentDetail, type Exercise } from "./domain";
 
 type PageId = "today" | "routines" | "exercises" | "progress" | "settings" | "workout";
 
@@ -86,7 +86,7 @@ const contextByPage: Record<
     title: "Guía de ejercicio",
     eyebrow: "Biblioteca",
     body: "Selecciona un movimiento para ver indicaciones compactas sin salir del flujo de elección.",
-    bullets: ["Técnica", "Músculos principales", "Errores comunes"],
+    bullets: ["Equipo exacto", "Técnica", "Errores comunes"],
   },
   progress: {
     title: "Lectura de progreso",
@@ -632,24 +632,43 @@ function ExercisesPage() {
             </div>
           </div>
           {isLoading ? (
-            <EmptyRows rows={4} labels={["Nombre", "Equipo", "Músculos", "Etiquetas"]} />
+            <EmptyRows rows={4} labels={["Nombre", "Estación"]} />
           ) : filteredExercises.length > 0 ? (
-            <div className="exercise-browser-list">
-              {filteredExercises.map((exercise) => (
-                <button
-                  className="exercise-browser-row"
-                  data-active={exercise.id === selectedExercise?.id}
-                  type="button"
-                  key={exercise.id}
-                  onClick={() => setSelectedExerciseId(exercise.id)}
-                >
-                  <strong>{exercise.name}</strong>
-                  <span>{exercise.primaryMuscles.join(", ")}</span>
-                  <span>{exercise.equipment.join(", ")}</span>
-                  <span>{exercise.tags.slice(0, 4).join(", ")}</span>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="exercise-browser-table-head" aria-hidden="true">
+                <span>Ejercicio</span>
+                <span>Estación</span>
+              </div>
+              <div className="exercise-browser-list">
+                {filteredExercises.map((exercise) => {
+                  const equipmentDetail = formatExerciseEquipmentDetail(exercise);
+                  const exerciseMeta = [
+                    exercise.primaryMuscles.join(", "),
+                    exercise.tags.slice(0, 2).join(", "),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+
+                  return (
+                    <button
+                      className="exercise-browser-row"
+                      data-active={exercise.id === selectedExercise?.id}
+                      type="button"
+                      key={exercise.id}
+                      onClick={() => setSelectedExerciseId(exercise.id)}
+                    >
+                      <span className="exercise-name-cell">
+                        <strong>{exercise.name}</strong>
+                        <small>{exerciseMeta}</small>
+                      </span>
+                      <span className="exercise-station-text" title={equipmentDetail}>
+                        {equipmentDetail}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <EmptyState
               title="Sin resultados"
@@ -715,10 +734,20 @@ function ExerciseGuideCard({ exercise }: { exercise: Exercise | null }) {
           ? ` · ${exercise.secondaryMuscles.join(", ")}`
           : ""}
       </p>
+      <EquipmentDetailCallout exercise={exercise} />
       <GuideBlock title="Preparación" items={exercise.guide.setup} />
       <GuideBlock title="Técnica" items={exercise.guide.technique} />
       <GuideBlock title="Errores comunes" items={exercise.guide.commonMistakes} />
     </article>
+  );
+}
+
+function EquipmentDetailCallout({ exercise }: { exercise: Exercise }) {
+  return (
+    <div className="equipment-detail-callout">
+      <span>Busca en el gym</span>
+      <strong>{formatExerciseEquipmentDetail(exercise)}</strong>
+    </div>
   );
 }
 

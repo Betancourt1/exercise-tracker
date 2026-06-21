@@ -47,6 +47,7 @@ export function filterExerciseLibrary(
     const searchText = normalizeFilterText(
       [
         exercise.name,
+        exercise.equipmentDetail ?? "",
         ...exercise.primaryMuscles,
         ...exercise.secondaryMuscles,
         ...exercise.equipment,

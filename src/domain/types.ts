@@ -20,6 +20,7 @@ export type Exercise = {
   primaryMuscles: string[];
   secondaryMuscles: string[];
   equipment: string[];
+  equipmentDetail?: string;
   tags: string[];
   guide: ExerciseGuide;
   isCustom: boolean;
@@ -77,7 +78,7 @@ export type RoutineRevision = {
   snapshot: RoutineRevisionSnapshot;
 };
 
-export type ExerciseGuideSnapshot = Pick<Exercise, "id" | "name" | "guide">;
+export type ExerciseGuideSnapshot = Pick<Exercise, "id" | "name" | "equipmentDetail" | "guide">;
 
 export type RoutineExerciseTargetSnapshot = Pick<
   RoutineExercise,

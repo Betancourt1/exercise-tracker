@@ -11,7 +11,11 @@ import {
   X,
 } from "lucide-react";
 import { listSeededAvailableExercises, saveRoutineGraphRevision } from "../../data";
-import type { Exercise, RoutineExercise } from "../../domain";
+import {
+  formatExerciseEquipmentDetail,
+  type Exercise,
+  type RoutineExercise,
+} from "../../domain";
 import {
   buildRoutineEditGraph,
   createRoutineExerciseDraft,
@@ -382,9 +386,9 @@ export function RoutineBuilderDialog({
                       onClick={() => setSelectedExerciseId(exercise.id)}
                     >
                       <strong>{exercise.name}</strong>
-                      <span>{exercise.primaryMuscles.join(", ")}</span>
+                      <span>{formatExerciseEquipmentDetail(exercise)}</span>
                       <small>
-                        {[exercise.equipment[0], exercise.tags[0]].filter(Boolean).join(" · ")}
+                        {[exercise.primaryMuscles[0], exercise.tags[0]].filter(Boolean).join(" · ")}
                       </small>
                     </button>
                     <button
@@ -631,6 +635,10 @@ function ExerciseGuidePanel({ exercise }: { exercise: Exercise | null }) {
           ? ` · ${exercise.secondaryMuscles.join(", ")}`
           : ""}
       </p>
+      <div className="builder-equipment-detail">
+        <span>Estación</span>
+        <strong>{formatExerciseEquipmentDetail(exercise)}</strong>
+      </div>
       <GuideList title="Preparación" items={exercise.guide.setup} />
       <GuideList title="Técnica" items={exercise.guide.technique} />
       <GuideList title="Errores comunes" items={exercise.guide.commonMistakes} />

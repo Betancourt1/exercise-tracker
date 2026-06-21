@@ -30,6 +30,13 @@ describe("exercise library filters", () => {
         query: "  MAQUINA pecho  ",
       }).map((exercise) => exercise.name),
     ).toEqual(expect.arrayContaining(["Press de pecho en máquina"]));
+
+    expect(
+      filterExerciseLibrary(exercises, {
+        ...baseFilters,
+        query: "polea alta",
+      }).map((exercise) => exercise.name),
+    ).toEqual(expect.arrayContaining(["Jalón al pecho", "Crunch en polea"]));
   });
 
   it("combines query, muscle, equipment, and tag filters", () => {

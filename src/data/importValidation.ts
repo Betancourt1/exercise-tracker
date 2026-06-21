@@ -113,6 +113,12 @@ function validateExercises(records: Exercise[]): string | null {
     if (!isStringArray(record.primaryMuscles)) return "requiere primaryMuscles";
     if (!isStringArray(record.secondaryMuscles)) return "requiere secondaryMuscles";
     if (!isStringArray(record.equipment)) return "requiere equipment";
+    if (
+      record.equipmentDetail !== undefined &&
+      typeof record.equipmentDetail !== "string"
+    ) {
+      return "equipmentDetail debe ser string";
+    }
     if (!isStringArray(record.tags)) return "requiere tags";
     if (!isGuide(record.guide)) return "requiere guide válido";
     if (typeof record.isCustom !== "boolean") return "requiere isCustom";

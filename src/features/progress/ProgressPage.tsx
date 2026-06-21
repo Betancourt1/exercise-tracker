@@ -496,6 +496,9 @@ function ExerciseGuidePanel({
 
       {guideSnapshot ? (
         <div className="progress-guide-content">
+          {guideSnapshot.equipmentDetail ? (
+            <GuideBlock title="Estación" items={[guideSnapshot.equipmentDetail]} />
+          ) : null}
           <GuideBlock title="Técnica" items={guideSnapshot.guide.technique} />
           <GuideBlock title="Evita" items={guideSnapshot.guide.commonMistakes} />
         </div>

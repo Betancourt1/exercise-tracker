@@ -9,6 +9,53 @@ type SeedExerciseInput = Pick<
   "name" | "primaryMuscles" | "secondaryMuscles" | "equipment" | "tags" | "guide"
 >;
 
+const equipmentDetailsByExerciseName: Record<string, string> = {
+  Sentadilla: "Rack de sentadilla o jaula de potencia con barra olímpica.",
+  "Press banca": "Banco plano con soportes para barra olímpica.",
+  "Remo con barra": "Barra olímpica libre; opcional rack para elevar la barra al inicio.",
+  "Peso muerto rumano": "Barra olímpica libre o par de mancuernas pesadas.",
+  Zancadas: "Espacio libre con peso corporal o par de mancuernas.",
+  "Press militar": "Rack con barra a altura de hombros o par de mancuernas.",
+  "Sentadilla con peso corporal": "Espacio libre, sin máquina.",
+  "Sentadilla goblet": "Mancuerna o kettlebell sostenida frente al pecho.",
+  "Step-up": "Banco, cajón pliométrico o plataforma estable.",
+  "Prensa de pierna": "Máquina de prensa de pierna inclinada u horizontal.",
+  "Curl femoral en máquina": "Máquina de curl femoral acostado o sentado.",
+  "Extensión de piernas": "Máquina de extensión de piernas con rodillo frontal.",
+  "Hip thrust": "Banco estable con barra y almohadilla; máquina de hip thrust si existe.",
+  "Puente de glúteos": "Colchoneta o piso; opcional mancuerna sobre la cadera.",
+  "Elevación de pantorrillas":
+    "Máquina de pantorrilla de pie o sentado; alternativa con mancuernas.",
+  Flexiones: "Piso o colchoneta, sin máquina.",
+  "Press inclinado con mancuernas": "Banco ajustable inclinado y par de mancuernas.",
+  "Aperturas con mancuernas": "Banco plano o inclinado y par de mancuernas ligeras.",
+  "Jalón al pecho": "Máquina de jalón al pecho con polea alta y soporte para muslos.",
+  "Dominadas asistidas": "Máquina de dominadas asistidas; alternativa banda en barra fija.",
+  "Remo con mancuerna": "Banco plano y una mancuerna.",
+  "Remo invertido": "Barra fija baja en rack o Smith machine bloqueada.",
+  "Remo sentado en polea": "Máquina de remo sentado con polea baja.",
+  "Face pull": "Polea alta o media con cuerda; alternativa banda anclada.",
+  "Elevaciones laterales": "Par de mancuernas; alternativa polea baja o banda.",
+  "Curl de bíceps": "Par de mancuernas, barra recta/EZ o polea baja.",
+  "Extensión de tríceps en polea": "Polea alta con cuerda o barra recta.",
+  "Fondos en banco": "Banco plano estable, sin máquina.",
+  Plancha: "Piso o colchoneta, sin máquina.",
+  "Dead bug": "Piso o colchoneta, sin máquina.",
+  "Pallof press": "Polea ajustable a altura del pecho o banda anclada.",
+  "Farmer carry": "Par de mancuernas o kettlebells con espacio para caminar.",
+  "Kettlebell swing": "Kettlebell y espacio libre delante del cuerpo.",
+  "Press de pecho en máquina": "Máquina de press de pecho sentado con respaldo.",
+  "Press con mancuernas en banca plana": "Banco plano y par de mancuernas.",
+  "Press de hombro en máquina": "Máquina de press de hombro sentado con respaldo.",
+  "Remo con banda": "Banda de resistencia anclada a un punto estable.",
+  "Split squat": "Espacio libre; opcional par de mancuernas.",
+  "Peso muerto con kettlebell": "Kettlebell o mancuerna colocada entre los pies.",
+  "Plancha lateral": "Piso o colchoneta, sin máquina.",
+  "Crunch en polea": "Polea alta con cuerda, de rodillas frente a la torre.",
+  "Abducción de cadera en máquina": "Máquina de abducción de cadera sentado.",
+  "Curl martillo": "Par de mancuernas con agarre neutral.",
+};
+
 const seedExerciseInputs: SeedExerciseInput[] = [
   {
     name: "Sentadilla",
@@ -602,6 +649,8 @@ export function createSeedExercises(now = toIsoUtc()): Exercise[] {
     ...exercise,
     id: createSeedExerciseId(exercise.name),
     nameNormalized: normalizeExerciseName(exercise.name),
+    equipmentDetail:
+      equipmentDetailsByExerciseName[exercise.name] ?? exercise.equipment.join(", "),
     isCustom: false,
     archivedAt: null,
     createdAt: now,
@@ -616,15 +665,44 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
     return await db.transaction("rw", db.meta, db.exercises, async () => {
       const seedExercises = createSeedExercises(now);
       const existingExercises = await db.exercises.toArray();
-      const existingNames = new Set(
-        existingExercises.map((exercise) => exercise.nameNormalized),
+      const existingExerciseByName = new Map<string, Exercise>(
+        existingExercises.map((exercise) => [exercise.nameNormalized, exercise]),
       );
+      const existingNames = new Set(existingExerciseByName.keys());
       const missingExercises = seedExercises.filter(
         (exercise) => !existingNames.has(exercise.nameNormalized),
       );
+      const seedUpdates = seedExercises.flatMap((seedExercise) => {
+        const existingExercise = existingExerciseByName.get(seedExercise.nameNormalized);
+
+        if (
+          !existingExercise ||
+          existingExercise.isCustom ||
+          !hasSeedExerciseMetadataChanges(existingExercise, seedExercise)
+        ) {
+          return [];
+        }
+
+        return [
+          {
+            ...existingExercise,
+            primaryMuscles: seedExercise.primaryMuscles,
+            secondaryMuscles: seedExercise.secondaryMuscles,
+            equipment: seedExercise.equipment,
+            equipmentDetail: seedExercise.equipmentDetail,
+            tags: seedExercise.tags,
+            guide: seedExercise.guide,
+            updatedAt: now,
+          },
+        ];
+      });
 
       if (missingExercises.length > 0) {
         await db.exercises.bulkPut(missingExercises);
+      }
+
+      if (seedUpdates.length > 0) {
+        await db.exercises.bulkPut(seedUpdates);
       }
 
       await db.meta.put({
@@ -634,6 +712,7 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
         updatedAt: now,
         value: {
           insertedCount: missingExercises.length,
+          updatedCount: seedUpdates.length,
         },
       });
 
@@ -651,6 +730,26 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
 
 function createSeedExerciseId(name: string): string {
   return `seed:exercise:${normalizeExerciseName(name).replace(/\s+/g, "-")}`;
+}
+
+function hasSeedExerciseMetadataChanges(
+  existingExercise: Exercise,
+  seedExercise: Exercise,
+): boolean {
+  return (
+    existingExercise.equipmentDetail !== seedExercise.equipmentDetail ||
+    !areStringArraysEqual(existingExercise.primaryMuscles, seedExercise.primaryMuscles) ||
+    !areStringArraysEqual(existingExercise.secondaryMuscles, seedExercise.secondaryMuscles) ||
+    !areStringArraysEqual(existingExercise.equipment, seedExercise.equipment) ||
+    !areStringArraysEqual(existingExercise.tags, seedExercise.tags) ||
+    !areStringArraysEqual(existingExercise.guide.setup, seedExercise.guide.setup) ||
+    !areStringArraysEqual(existingExercise.guide.technique, seedExercise.guide.technique) ||
+    !areStringArraysEqual(existingExercise.guide.commonMistakes, seedExercise.guide.commonMistakes)
+  );
+}
+
+function areStringArraysEqual(first: string[], second: string[]): boolean {
+  return first.length === second.length && first.every((item, index) => item === second[index]);
 }
 
 function isConstraintError(error: unknown): boolean {

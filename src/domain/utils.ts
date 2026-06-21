@@ -14,3 +14,11 @@ export function normalizeExerciseName(name: string): string {
     .toLocaleLowerCase("es-MX")
     .replace(/\s+/g, " ");
 }
+
+export function formatExerciseEquipmentDetail(exercise: {
+  equipment: string[];
+  equipmentDetail?: string;
+}): string {
+  const detail = exercise.equipmentDetail?.trim();
+  return detail && detail.length > 0 ? detail : exercise.equipment.join(", ");
+}

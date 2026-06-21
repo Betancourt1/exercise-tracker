@@ -434,6 +434,12 @@ export function WorkoutPage({
           <h2>{currentGroup.guideSnapshot?.name ?? currentGroup.exerciseName}</h2>
           {currentGroup.guideSnapshot ? (
             <div className="workout-guide-sections">
+              {currentGroup.guideSnapshot.equipmentDetail ? (
+                <GuideSection
+                  title="Estación"
+                  items={[currentGroup.guideSnapshot.equipmentDetail]}
+                />
+              ) : null}
               <GuideSection title="Preparación" items={currentGroup.guideSnapshot.guide.setup} />
               <GuideSection title="Técnica" items={currentGroup.guideSnapshot.guide.technique} />
               <GuideSection

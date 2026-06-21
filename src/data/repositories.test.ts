@@ -780,6 +780,9 @@ describe("data repositories", () => {
       expect(exercises).toHaveLength(createSeedExercises().length);
       expect(new Set(exerciseIds).size).toBe(createSeedExercises().length);
       expect(exerciseIds.every((id) => id.startsWith("seed:exercise:"))).toBe(true);
+      expect(
+        exercises.every((exercise) => Boolean(exercise.equipmentDetail?.trim())),
+      ).toBe(true);
       expect(seedMeta).toMatchObject({
         id: EXERCISE_LIBRARY_SEED_META_ID,
       });

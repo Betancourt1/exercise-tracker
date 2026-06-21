@@ -150,6 +150,7 @@ function createGuideSnapshot(exercise: Exercise): ExerciseGuideSnapshot {
   return {
     id: exercise.id,
     name: exercise.name,
+    equipmentDetail: exercise.equipmentDetail,
     guide: exercise.guide,
   };
 }
