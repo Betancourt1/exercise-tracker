@@ -44,6 +44,8 @@ type SettingsStatus = {
   message: string;
 };
 
+const ACTIVE_PAGE_STORAGE_KEY = "mi-rutina-active-page";
+
 const navItems: NavItem[] = [
   { id: "today", label: "Hoy", icon: CalendarDays },
   { id: "routines", label: "Rutinas", icon: Dumbbell },
@@ -100,7 +102,7 @@ const contextByPage: Record<
 };
 
 function App() {
-  const [activePage, setActivePage] = useState<PageId>("today");
+  const [activePage, setActivePage] = useState<PageId>(getStoredActivePage);
   const [todayRoutine, setTodayRoutine] = useState<RoutineSummary | null>(null);
   const [workoutStartRequest, setWorkoutStartRequest] =
     useState<WorkoutStartRequest | null>(null);
@@ -129,6 +131,10 @@ function App() {
   useEffect(() => {
     void refreshInProgressWorkout();
   }, [refreshInProgressWorkout]);
+
+  useEffect(() => {
+    window.localStorage.setItem(ACTIVE_PAGE_STORAGE_KEY, activePage);
+  }, [activePage]);
 
   function startWorkout(summary: RoutineSummary) {
     setWorkoutStartRequest({
@@ -255,6 +261,22 @@ function MobileHeader({ activeItem }: { activeItem: NavItem }) {
         <span>{activeItem.label}</span>
       </div>
     </header>
+  );
+}
+
+function getStoredActivePage(): PageId {
+  const storedPage = window.localStorage.getItem(ACTIVE_PAGE_STORAGE_KEY);
+  return isPageId(storedPage) ? storedPage : "today";
+}
+
+function isPageId(value: string | null): value is PageId {
+  return (
+    value === "today" ||
+    value === "routines" ||
+    value === "exercises" ||
+    value === "progress" ||
+    value === "settings" ||
+    value === "workout"
   );
 }
 
