@@ -407,7 +407,7 @@ function TodayPage({
       />
 
       <div className="today-grid">
-        <article className="panel next-session">
+        <article className="next-session">
           <div>
             <p className="panel-label">Próxima sesión</p>
             <h2>{activeSummary ? activeSummary.routine.name : "No hay rutina activa"}</h2>
@@ -445,7 +445,7 @@ function TodayPage({
           </div>
         </article>
 
-        <article className="panel compact-panel">
+        <article className="today-priority">
           <p className="panel-label">Prioridad</p>
           {activeSummary ? (
             <div className="priority-summary">
@@ -462,7 +462,7 @@ function TodayPage({
         </article>
       </div>
 
-      <article className="panel">
+      <article className="today-routine-section">
         <div className="panel-header">
           <div>
             <p className="panel-label">Rutinas para hoy</p>
@@ -716,7 +716,7 @@ function ExerciseFilterSelect({
 function ExerciseGuideCard({ exercise }: { exercise: Exercise | null }) {
   if (!exercise) {
     return (
-      <article className="panel guide-card">
+      <article className="guide-card">
         <p className="panel-label">Guía</p>
         <h2>Elige un ejercicio</h2>
         <p className="muted">Selecciona un movimiento para ver indicaciones breves.</p>
@@ -726,7 +726,7 @@ function ExerciseGuideCard({ exercise }: { exercise: Exercise | null }) {
   }
 
   return (
-    <article className="panel guide-card">
+    <article className="guide-card">
       <p className="panel-label">Guía</p>
       <h2>{exercise.name}</h2>
       <p className="muted">
@@ -841,7 +841,7 @@ function SettingsPage({ onDataImported }: { onDataImported: () => Promise<void> 
     <section className="page-section">
       <PageTitle kicker="Ajustes" title="Preferencias locales" />
 
-      <article className="panel settings-list">
+      <article className="settings-list">
         <div className="settings-intro">
           <strong>Respaldo y recuperación</strong>
           <p>
@@ -959,7 +959,7 @@ function MobileContext({ activePage }: { activePage: PageId }) {
   const context = contextByPage[activePage];
 
   return (
-    <article className="mobile-context panel">
+    <article className="mobile-context">
       <p className="panel-label">{context.eyebrow}</p>
       <h2>{context.title}</h2>
       <p className="muted">{context.body}</p>

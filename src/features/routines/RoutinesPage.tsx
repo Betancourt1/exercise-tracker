@@ -430,7 +430,7 @@ function PresetShelf({
   onCreate: (preset: RoutinePreset) => void;
 }) {
   return (
-    <article className="panel routine-presets-panel" aria-labelledby="routine-presets-title">
+    <article className="routine-presets-panel" aria-labelledby="routine-presets-title">
       <div className="preset-shelf-header">
         <div>
           <p className="panel-label">Plantillas</p>

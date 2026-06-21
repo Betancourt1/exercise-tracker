@@ -198,7 +198,7 @@ export function ProgressPage({ onTrain }: ProgressPageProps) {
         />
       </div>
 
-      <article className="panel progress-help-strip">
+      <article className="progress-help-strip">
         <strong>Adherencia pendiente</strong>
         <span>
           Aún no se muestra porcentaje de adherencia porque falta una agenda planificada
@@ -331,7 +331,7 @@ function ProgressMetricCard({
   tone: "routine" | "training" | "progress";
 }) {
   return (
-    <article className="metric-card" data-tone={tone}>
+    <article className="metric-item" data-tone={tone}>
       <p>{label}</p>
       <strong>{value}</strong>
     </article>
@@ -613,7 +613,7 @@ function GuideBlock({ title, items }: { title: string; items: string[] }) {
 
 function FormulaHelp() {
   return (
-    <article className="panel progress-formula-help">
+    <article className="progress-formula-help">
       <strong>Cómo se calcula</strong>
       <span>
         Volumen = kg x repeticiones de series completadas. 1RM estimado usa Epley:

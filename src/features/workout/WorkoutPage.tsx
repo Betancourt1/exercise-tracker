@@ -332,7 +332,7 @@ export function WorkoutPage({
       </div>
 
       <div className="workout-layout">
-        <aside className="panel workout-queue-panel">
+        <aside className="workout-queue-panel">
           <p className="panel-label">Cola</p>
           <div className="workout-queue">
             {exerciseGroups.map((group, index) => (
@@ -352,7 +352,7 @@ export function WorkoutPage({
           </div>
         </aside>
 
-        <main className="panel workout-main-panel">
+        <main className="workout-main-panel">
           <div className="workout-current-header">
             <div>
               <p className="panel-label">Ejercicio actual</p>
@@ -430,7 +430,7 @@ export function WorkoutPage({
           </div>
         </main>
 
-        <aside className="panel workout-guide-panel">
+        <aside className="workout-guide-panel">
           <p className="panel-label">Guía</p>
           <h2>{currentGroup.guideSnapshot?.name ?? currentGroup.exerciseName}</h2>
           {currentGroup.guideSnapshot ? (
@@ -621,15 +621,15 @@ function WorkoutSummaryView({
       <WorkoutHeader title="Sesión guardada" />
 
       <div className="metric-grid">
-        <article className="metric-card" data-tone="training">
+        <article className="metric-item" data-tone="training">
           <p>Duración</p>
           <strong>{formatWorkoutDuration(summary.session.durationSeconds)}</strong>
         </article>
-        <article className="metric-card" data-tone="routine">
+        <article className="metric-item" data-tone="routine">
           <p>Series</p>
           <strong>{summary.session.completedSetCount}</strong>
         </article>
-        <article className="metric-card" data-tone="progress">
+        <article className="metric-item" data-tone="progress">
           <p>Volumen</p>
           <strong>{Math.round(summary.session.volumeKg)} kg</strong>
         </article>
