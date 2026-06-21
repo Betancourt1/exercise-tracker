@@ -78,7 +78,13 @@ export type RoutineRevision = {
   snapshot: RoutineRevisionSnapshot;
 };
 
-export type ExerciseGuideSnapshot = Pick<Exercise, "id" | "name" | "equipmentDetail" | "guide">;
+export type ExerciseGuideSnapshot = Pick<
+  Exercise,
+  "id" | "name" | "equipmentDetail" | "guide"
+> & {
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+};
 
 export type RoutineExerciseTargetSnapshot = Pick<
   RoutineExercise,

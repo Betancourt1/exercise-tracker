@@ -151,6 +151,8 @@ function createGuideSnapshot(exercise: Exercise): ExerciseGuideSnapshot {
     id: exercise.id,
     name: exercise.name,
     equipmentDetail: exercise.equipmentDetail,
+    primaryMuscles: exercise.primaryMuscles,
+    secondaryMuscles: exercise.secondaryMuscles,
     guide: exercise.guide,
   };
 }

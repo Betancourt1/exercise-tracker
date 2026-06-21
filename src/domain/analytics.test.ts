@@ -7,7 +7,7 @@ import {
   calculateSessionVolume,
   calculateSetVolume,
 } from "./analytics";
-import type { SetLog, WorkoutSession } from "./types";
+import type { Exercise, SetLog, WorkoutSession } from "./types";
 
 describe("analytics helpers", () => {
   it("calculates set volume only for completed valid sets", () => {
@@ -178,6 +178,93 @@ describe("analytics helpers", () => {
       bestWeightReps: 5,
     });
   });
+
+  it("builds weighted muscle loads from guide snapshots with exercise fallback", () => {
+    const analytics = buildProgressAnalytics({
+      sessions: [
+        createSession({
+          id: "session-completed",
+          status: "completed",
+          startedAt: "2026-06-20T00:00:00.000Z",
+        }),
+      ],
+      exercises: [
+        createExercise({
+          id: "press-banca",
+          name: "Press banca",
+          primaryMuscles: ["pecho"],
+          secondaryMuscles: ["tríceps"],
+        }),
+      ],
+      setLogs: [
+        createSetLog({
+          id: "sentadilla-set",
+          sessionId: "session-completed",
+          exerciseId: "sentadilla",
+          exerciseNameSnapshot: "Sentadilla",
+          completed: true,
+          weightKg: 100,
+          reps: 5,
+          guideSnapshot: {
+            id: "sentadilla",
+            name: "Sentadilla",
+            primaryMuscles: ["cuádriceps"],
+            secondaryMuscles: ["glúteos"],
+            guide: {
+              setup: ["Barra estable."],
+              technique: ["Baja con control."],
+              commonMistakes: ["Perder postura."],
+            },
+          },
+        }),
+        createSetLog({
+          id: "press-set",
+          sessionId: "session-completed",
+          exerciseId: "press-banca",
+          exerciseNameSnapshot: "Press banca",
+          completed: true,
+          weightKg: 50,
+          reps: 10,
+          guideSnapshot: null,
+        }),
+      ],
+    });
+
+    expect(analytics.muscleLoads).toEqual([
+      expect.objectContaining({
+        muscle: "cuádriceps",
+        score: 1,
+        completedSetCount: 1,
+        primarySetCount: 1,
+        secondarySetCount: 0,
+        volumeKg: 500,
+      }),
+      expect.objectContaining({
+        muscle: "pecho",
+        score: 1,
+        completedSetCount: 1,
+        primarySetCount: 1,
+        secondarySetCount: 0,
+        volumeKg: 500,
+      }),
+      expect.objectContaining({
+        muscle: "glúteos",
+        score: 0.5,
+        completedSetCount: 1,
+        primarySetCount: 0,
+        secondarySetCount: 1,
+        volumeKg: 250,
+      }),
+      expect.objectContaining({
+        muscle: "tríceps",
+        score: 0.5,
+        completedSetCount: 1,
+        primarySetCount: 0,
+        secondarySetCount: 1,
+        volumeKg: 250,
+      }),
+    ]);
+  });
 });
 
 function createSession(overrides: Partial<WorkoutSession> = {}): WorkoutSession {
@@ -234,6 +321,28 @@ function createSetLog(overrides: Partial<SetLog> = {}): SetLog {
       restSeconds: 120,
     },
     notes: "",
+    ...overrides,
+  };
+}
+
+function createExercise(overrides: Partial<Exercise> = {}): Exercise {
+  return {
+    id: "sentadilla",
+    name: "Sentadilla",
+    nameNormalized: "sentadilla",
+    primaryMuscles: ["cuádriceps"],
+    secondaryMuscles: ["glúteos"],
+    equipment: ["barra"],
+    tags: ["fuerza"],
+    guide: {
+      setup: ["Preparación."],
+      technique: ["Técnica."],
+      commonMistakes: ["Error común."],
+    },
+    isCustom: false,
+    archivedAt: null,
+    createdAt: "2026-06-20T00:00:00.000Z",
+    updatedAt: "2026-06-20T00:00:00.000Z",
     ...overrides,
   };
 }

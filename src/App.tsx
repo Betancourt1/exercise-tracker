@@ -28,6 +28,7 @@ import { loadHighestPriorityActiveRoutine } from "./features/routines/routineQue
 import type { RoutineSummary } from "./features/routines/types";
 import { WorkoutPage } from "./features/workout/WorkoutPage";
 import type { WorkoutStartRequest } from "./features/workout/types";
+import { ExerciseVisualPanel } from "./features/exerciseVisuals";
 import {
   exportDatabaseJson,
   getLatestInProgressWorkoutDraft,
@@ -735,6 +736,7 @@ function ExerciseGuideCard({ exercise }: { exercise: Exercise | null }) {
           : ""}
       </p>
       <EquipmentDetailCallout exercise={exercise} />
+      <ExerciseVisualPanel exercise={exercise} compact />
       <GuideBlock title="Preparación" items={exercise.guide.setup} />
       <GuideBlock title="Técnica" items={exercise.guide.technique} />
       <GuideBlock title="Errores comunes" items={exercise.guide.commonMistakes} />

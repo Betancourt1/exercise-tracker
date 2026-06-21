@@ -31,6 +31,7 @@ import type {
   WorkoutDraftState,
   WorkoutStartRequest,
 } from "./types";
+import { ExerciseVisualPanel } from "../exerciseVisuals";
 
 type WorkoutPageProps = {
   startRequest: WorkoutStartRequest | null;
@@ -434,6 +435,7 @@ export function WorkoutPage({
           <h2>{currentGroup.guideSnapshot?.name ?? currentGroup.exerciseName}</h2>
           {currentGroup.guideSnapshot ? (
             <div className="workout-guide-sections">
+              <ExerciseVisualPanel exercise={currentGroup.guideSnapshot} compact />
               {currentGroup.guideSnapshot.equipmentDetail ? (
                 <GuideSection
                   title="Estación"

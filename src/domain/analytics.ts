@@ -1,4 +1,5 @@
 import type {
+  Exercise,
   ExerciseGuideSnapshot,
   RoutineExerciseTargetSnapshot,
   SetLog,
@@ -57,6 +58,8 @@ export type ProgressExerciseSet = {
 export type ProgressExerciseDetail = {
   exerciseId: string;
   exerciseName: string;
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
   completedSetCount: number;
   totalVolumeKg: number;
   bestEstimatedOneRepMax: number | null;
@@ -68,6 +71,15 @@ export type ProgressExerciseDetail = {
   recentSets: ProgressExerciseSet[];
 };
 
+export type ProgressMuscleLoad = {
+  muscle: string;
+  score: number;
+  completedSetCount: number;
+  primarySetCount: number;
+  secondarySetCount: number;
+  volumeKg: number;
+};
+
 export type ProgressAnalytics = {
   completedSessionCount: number;
   totalVolumeKg: number;
@@ -76,11 +88,13 @@ export type ProgressAnalytics = {
   recentSessions: ProgressSessionSummary[];
   volumeTrend: ProgressVolumePoint[];
   exerciseDetails: ProgressExerciseDetail[];
+  muscleLoads: ProgressMuscleLoad[];
 };
 
 export type ProgressAnalyticsInput = {
   sessions: WorkoutSession[];
   setLogs: SetLog[];
+  exercises?: Exercise[];
 };
 
 function isFiniteNumber(value: number | null): value is number {
@@ -190,6 +204,7 @@ export function calculateAdherence(
 export function buildProgressAnalytics({
   sessions,
   setLogs,
+  exercises = [],
 }: ProgressAnalyticsInput): ProgressAnalytics {
   const completedSessions = sessions
     .filter((session) => session.status === "completed")
@@ -223,6 +238,7 @@ export function buildProgressAnalytics({
   }));
   const prsByExercise = calculatePrsByExercise(prSourceSets);
   const prSetIds = new Set(Object.values(prsByExercise).map((pr) => pr.setLogId));
+  const exerciseById = new Map(exercises.map((exercise) => [exercise.id, exercise]));
 
   const recentSessions = completedSessions.map<ProgressSessionSummary>((session) => {
     const sessionSetLogs = progressSetLogsBySession.get(session.id) ?? [];
@@ -242,7 +258,11 @@ export function buildProgressAnalytics({
     };
   });
 
-  const exerciseDetails = buildProgressExerciseDetails(progressSetLogs, prSetIds);
+  const exerciseDetails = buildProgressExerciseDetails(
+    progressSetLogs,
+    prSetIds,
+    exerciseById,
+  );
 
   return {
     completedSessionCount: completedSessions.length,
@@ -263,12 +283,14 @@ export function buildProgressAnalytics({
         volumeKg: session.volumeKg,
       })),
     exerciseDetails,
+    muscleLoads: buildProgressMuscleLoads(progressSetLogs, exerciseById),
   };
 }
 
 function buildProgressExerciseDetails(
   progressSetLogs: Array<{ setLog: SetLog; completedAt: string }>,
   prSetIds: Set<string>,
+  exerciseById: Map<string, Exercise>,
 ): ProgressExerciseDetail[] {
   const setsByExercise = new Map<string, Array<{ setLog: SetLog; completedAt: string }>>();
 
@@ -331,10 +353,20 @@ function buildProgressExerciseDetails(
           isPr: prSetIds.has(setLog.id),
         };
       });
+      const guideSnapshot =
+        sortedSets.find((entry) => entry.setLog.guideSnapshot)?.setLog.guideSnapshot ??
+        null;
+      const muscleSource = getExerciseMuscleSource(
+        exerciseId,
+        guideSnapshot,
+        exerciseById,
+      );
 
       return {
         exerciseId,
         exerciseName: sortedSets[0]?.setLog.exerciseNameSnapshot ?? "Ejercicio",
+        primaryMuscles: muscleSource.primaryMuscles,
+        secondaryMuscles: muscleSource.secondaryMuscles,
         completedSetCount: exerciseSets.length,
         totalVolumeKg: exerciseSets.reduce(
           (total, entry) => total + calculateSetVolume(entry.setLog),
@@ -344,14 +376,124 @@ function buildProgressExerciseDetails(
         bestWeightKg: bestWeightSet?.weightKg ?? null,
         bestWeightReps: bestWeightSet?.reps ?? null,
         bestSetAt: bestWeightSet?.completedAt ?? null,
-        guideSnapshot:
-          sortedSets.find((entry) => entry.setLog.guideSnapshot)?.setLog.guideSnapshot ?? null,
+        guideSnapshot,
         targetSnapshot:
           sortedSets.find((entry) => entry.setLog.targetSnapshot)?.setLog.targetSnapshot ?? null,
         recentSets,
       };
     })
     .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName, "es-MX"));
+}
+
+function buildProgressMuscleLoads(
+  progressSetLogs: Array<{ setLog: SetLog; completedAt: string }>,
+  exerciseById: Map<string, Exercise>,
+): ProgressMuscleLoad[] {
+  const loads = new Map<string, ProgressMuscleLoad>();
+
+  for (const { setLog } of progressSetLogs) {
+    const source = getSetMuscleSource(setLog, exerciseById);
+    const primaryKeys = new Set(source.primaryMuscles.map(normalizeMuscleName));
+    const touchedKeys = new Set<string>();
+
+    for (const muscle of source.primaryMuscles) {
+      addMuscleLoad(loads, muscle, setLog, 1, "primary");
+      touchedKeys.add(normalizeMuscleName(muscle));
+    }
+
+    for (const muscle of source.secondaryMuscles) {
+      const muscleKey = normalizeMuscleName(muscle);
+      if (primaryKeys.has(muscleKey)) {
+        continue;
+      }
+
+      addMuscleLoad(loads, muscle, setLog, 0.5, "secondary");
+      touchedKeys.add(muscleKey);
+    }
+
+    for (const muscleKey of touchedKeys) {
+      const load = loads.get(muscleKey);
+      if (load) {
+        load.completedSetCount += 1;
+      }
+    }
+  }
+
+  return Array.from(loads.values()).sort(
+    (a, b) => b.score - a.score || a.muscle.localeCompare(b.muscle, "es-MX"),
+  );
+}
+
+function addMuscleLoad(
+  loads: Map<string, ProgressMuscleLoad>,
+  muscle: string,
+  setLog: SetLog,
+  weight: number,
+  role: "primary" | "secondary",
+) {
+  const muscleKey = normalizeMuscleName(muscle);
+  if (muscleKey.length === 0) {
+    return;
+  }
+
+  const current =
+    loads.get(muscleKey) ??
+    ({
+      muscle,
+      score: 0,
+      completedSetCount: 0,
+      primarySetCount: 0,
+      secondarySetCount: 0,
+      volumeKg: 0,
+    } satisfies ProgressMuscleLoad);
+
+  current.score += weight;
+  current.volumeKg += calculateSetVolume(setLog) * weight;
+  if (role === "primary") {
+    current.primarySetCount += 1;
+  } else {
+    current.secondarySetCount += 1;
+  }
+
+  loads.set(muscleKey, current);
+}
+
+function getSetMuscleSource(
+  setLog: SetLog,
+  exerciseById: Map<string, Exercise>,
+): Pick<Exercise, "primaryMuscles" | "secondaryMuscles"> {
+  return getExerciseMuscleSource(setLog.exerciseId, setLog.guideSnapshot, exerciseById);
+}
+
+function getExerciseMuscleSource(
+  exerciseId: string,
+  guideSnapshot: ExerciseGuideSnapshot | null,
+  exerciseById: Map<string, Exercise>,
+): Pick<Exercise, "primaryMuscles" | "secondaryMuscles"> {
+  const snapshotPrimary = readStringArray(guideSnapshot?.primaryMuscles);
+  const snapshotSecondary = readStringArray(guideSnapshot?.secondaryMuscles);
+  if (snapshotPrimary.length > 0 || snapshotSecondary.length > 0) {
+    return {
+      primaryMuscles: snapshotPrimary,
+      secondaryMuscles: snapshotSecondary,
+    };
+  }
+
+  const exercise = exerciseById.get(exerciseId);
+  return {
+    primaryMuscles: exercise?.primaryMuscles ?? [],
+    secondaryMuscles: exercise?.secondaryMuscles ?? [],
+  };
+}
+
+function readStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function normalizeMuscleName(value: string): string {
+  return value.trim().toLocaleLowerCase("es-MX");
 }
 
 function isCompletedProgressSetLog(

@@ -30,6 +30,7 @@ import {
   hasActiveExerciseFilters,
   type ExerciseLibraryFilters,
 } from "./exerciseLibraryFilters";
+import { ExerciseVisualPanel } from "../exerciseVisuals";
 
 type RoutineBuilderDialogProps = {
   summary: RoutineSummary;
@@ -639,6 +640,7 @@ function ExerciseGuidePanel({ exercise }: { exercise: Exercise | null }) {
         <span>Estación</span>
         <strong>{formatExerciseEquipmentDetail(exercise)}</strong>
       </div>
+      <ExerciseVisualPanel exercise={exercise} compact />
       <GuideList title="Preparación" items={exercise.guide.setup} />
       <GuideList title="Técnica" items={exercise.guide.technique} />
       <GuideList title="Errores comunes" items={exercise.guide.commonMistakes} />

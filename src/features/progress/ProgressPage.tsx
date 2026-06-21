@@ -15,11 +15,13 @@ import type {
   ProgressAnalytics,
   ProgressExerciseDetail,
   ProgressExerciseSet,
+  ProgressMuscleLoad,
   ProgressSessionSummary,
   ProgressVolumePoint,
   RoutineExerciseTargetSnapshot,
 } from "../../domain";
 import { loadProgressAnalytics } from "./progressQueries";
+import { BodyMuscleMap, ExerciseMotionIllustration } from "../exerciseVisuals";
 
 type ProgressPageProps = {
   onTrain: () => void;
@@ -206,6 +208,7 @@ export function ProgressPage({ onTrain }: ProgressPageProps) {
 
       <div className="progress-main-grid">
         <div className="progress-main-column">
+          <MuscleHeatmapPanel loads={analytics.muscleLoads} />
           <VolumeTrendChart points={analytics.volumeTrend} />
           <RecentSessionsList sessions={analytics.recentSessions} />
         </div>
@@ -220,6 +223,7 @@ export function ProgressPage({ onTrain }: ProgressPageProps) {
             <>
               <ExerciseDetailPanel exercise={selectedExercise} />
               <ExerciseGuidePanel
+                exercise={selectedExercise}
                 guideSnapshot={selectedExercise.guideSnapshot}
                 targetSnapshot={selectedExercise.targetSnapshot}
               />
@@ -237,6 +241,57 @@ export function ProgressPage({ onTrain }: ProgressPageProps) {
 
       <FormulaHelp />
     </section>
+  );
+}
+
+function MuscleHeatmapPanel({ loads }: { loads: ProgressMuscleLoad[] }) {
+  const topLoads = loads.slice(0, 6);
+
+  return (
+    <article className="panel progress-muscle-panel">
+      <div className="panel-header">
+        <div>
+          <p className="panel-label">Mapa muscular</p>
+          <h2>Qué has trabajado</h2>
+        </div>
+        <Dumbbell size={19} className="progress-panel-icon" />
+      </div>
+
+      {loads.length > 0 ? (
+        <div className="progress-muscle-layout">
+          <BodyMuscleMap
+            title="Heatmap corporal"
+            intensities={loads.map((load) => ({
+              muscle: load.muscle,
+              value: load.score,
+            }))}
+          />
+          <div className="progress-muscle-summary">
+            <strong>Mayor estímulo reciente</strong>
+            <div className="progress-muscle-list">
+              {topLoads.map((load) => (
+                <div className="progress-muscle-row" key={load.muscle}>
+                  <span>{load.muscle}</span>
+                  <strong>{formatLoadScore(load.score)}</strong>
+                  <small>
+                    {load.completedSetCount} series · {formatKg(load.volumeKg)} kg ponderados
+                  </small>
+                </div>
+              ))}
+            </div>
+            <p>
+              La intensidad usa series ponderadas: músculo primario cuenta 1, secundario
+              cuenta 0.5 por serie completada.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="empty-state">
+          <strong>Sin mapa muscular todavía</strong>
+          <p>Guarda series con ejercicios del inventario para generar el heatmap.</p>
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -434,6 +489,15 @@ function ExerciseDetailPanel({ exercise }: { exercise: ProgressExerciseDetail })
         </div>
       </div>
 
+      {exercise.primaryMuscles.length > 0 || exercise.secondaryMuscles.length > 0 ? (
+        <BodyMuscleMap
+          title="Músculos del ejercicio"
+          primaryMuscles={exercise.primaryMuscles}
+          secondaryMuscles={exercise.secondaryMuscles}
+          compact
+        />
+      ) : null}
+
       <div
         className="progress-estimate-chart"
         role="img"
@@ -478,9 +542,11 @@ function SetHistory({ sets }: { sets: ProgressExerciseSet[] }) {
 }
 
 function ExerciseGuidePanel({
+  exercise,
   guideSnapshot,
   targetSnapshot,
 }: {
+  exercise: ProgressExerciseDetail;
   guideSnapshot: ExerciseGuideSnapshot | null;
   targetSnapshot: RoutineExerciseTargetSnapshot | null;
 }) {
@@ -496,6 +562,15 @@ function ExerciseGuidePanel({
 
       {guideSnapshot ? (
         <div className="progress-guide-content">
+          <ExerciseMotionIllustration
+            exercise={{
+              name: guideSnapshot.name,
+              primaryMuscles: exercise.primaryMuscles,
+              secondaryMuscles: exercise.secondaryMuscles,
+              guide: guideSnapshot.guide,
+            }}
+            compact
+          />
           {guideSnapshot.equipmentDetail ? (
             <GuideBlock title="Estación" items={[guideSnapshot.equipmentDetail]} />
           ) : null}
@@ -558,6 +633,10 @@ function formatCompactDate(value: string): string {
 
 function formatKg(value: number): string {
   return integerFormatter.format(Math.round(value));
+}
+
+function formatLoadScore(value: number): string {
+  return decimalFormatter.format(value);
 }
 
 function formatDecimalKg(value: number): string {
