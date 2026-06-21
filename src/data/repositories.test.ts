@@ -798,6 +798,7 @@ function createExercise(): Exercise {
     id: "exercise-1",
     name: "Sentadilla",
     nameNormalized: "sentadilla",
+    type: "reps",
     primaryMuscles: ["pierna"],
     secondaryMuscles: [],
     equipment: ["barra"],

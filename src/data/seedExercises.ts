@@ -1,4 +1,4 @@
-import type { Exercise } from "../domain/types";
+import type { Exercise, ExerciseType } from "../domain/types";
 import { normalizeExerciseName, toIsoUtc } from "../domain/utils";
 import { appDb, type WorkoutDatabase } from "./db";
 
@@ -7,7 +7,9 @@ export const EXERCISE_LIBRARY_SEED_META_ID = "seed:exercise-library:1";
 type SeedExerciseInput = Pick<
   Exercise,
   "name" | "primaryMuscles" | "secondaryMuscles" | "equipment" | "tags" | "guide"
->;
+> & {
+  type?: ExerciseType;
+};
 
 const equipmentDetailsByExerciseName: Record<string, string> = {
   Sentadilla: "Rack de sentadilla o jaula de potencia con barra olímpica.",
@@ -434,6 +436,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
   },
   {
     name: "Plancha",
+    type: "duration",
     primaryMuscles: ["core"],
     secondaryMuscles: ["hombros", "glúteos"],
     equipment: ["peso corporal"],
@@ -476,6 +479,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
   },
   {
     name: "Farmer carry",
+    type: "duration",
     primaryMuscles: ["core", "antebrazos"],
     secondaryMuscles: ["trapecio", "glúteos", "piernas"],
     equipment: ["mancuernas", "kettlebells"],
@@ -602,6 +606,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
   },
   {
     name: "Plancha lateral",
+    type: "duration",
     primaryMuscles: ["core"],
     secondaryMuscles: ["glúteos", "hombros"],
     equipment: ["peso corporal"],
@@ -764,6 +769,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
   },
   {
     name: "Bird dog",
+    type: "duration",
     primaryMuscles: ["core"],
     secondaryMuscles: ["glúteos", "espalda baja"],
     equipment: ["peso corporal"],
@@ -805,6 +811,7 @@ export function createSeedExercises(now = toIsoUtc()): Exercise[] {
     ...exercise,
     id: createSeedExerciseId(exercise.name),
     nameNormalized: normalizeExerciseName(exercise.name),
+    type: exercise.type || "reps",
     equipmentDetail:
       equipmentDetailsByExerciseName[exercise.name] ?? exercise.equipment.join(", "),
     isCustom: false,
@@ -842,6 +849,7 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
         return [
           {
             ...existingExercise,
+            type: seedExercise.type,
             primaryMuscles: seedExercise.primaryMuscles,
             secondaryMuscles: seedExercise.secondaryMuscles,
             equipment: seedExercise.equipment,
@@ -893,6 +901,7 @@ function hasSeedExerciseMetadataChanges(
   seedExercise: Exercise,
 ): boolean {
   return (
+    existingExercise.type !== seedExercise.type ||
     existingExercise.equipmentDetail !== seedExercise.equipmentDetail ||
     !areStringArraysEqual(existingExercise.primaryMuscles, seedExercise.primaryMuscles) ||
     !areStringArraysEqual(existingExercise.secondaryMuscles, seedExercise.secondaryMuscles) ||

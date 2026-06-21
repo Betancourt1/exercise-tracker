@@ -81,7 +81,10 @@ function validateStoreArrays(data: Record<string, unknown>): DataValidationResul
     ok: true,
     value: {
       meta: data.meta as AppMetaRecord[],
-      exercises: data.exercises as Exercise[],
+      exercises: (data.exercises as Exercise[]).map((e) => ({
+        ...e,
+        type: e.type || "reps",
+      })),
       routines: data.routines as Routine[],
       routineDays: data.routineDays as RoutineDay[],
       routineExercises: data.routineExercises as RoutineExercise[],
@@ -110,6 +113,14 @@ function validateExercises(records: Exercise[]): string | null {
     if (!isNonEmptyString(record.id)) return "requiere id";
     if (!isNonEmptyString(record.name)) return "requiere name";
     if (!isNonEmptyString(record.nameNormalized)) return "requiere nameNormalized";
+    if (
+      record.type !== undefined &&
+      record.type !== "reps" &&
+      record.type !== "duration" &&
+      record.type !== "cardio"
+    ) {
+      return "type no es válido";
+    }
     if (!isStringArray(record.primaryMuscles)) return "requiere primaryMuscles";
     if (!isStringArray(record.secondaryMuscles)) return "requiere secondaryMuscles";
     if (!isStringArray(record.equipment)) return "requiere equipment";

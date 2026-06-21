@@ -154,5 +154,6 @@ function createGuideSnapshot(exercise: Exercise): ExerciseGuideSnapshot {
     primaryMuscles: exercise.primaryMuscles,
     secondaryMuscles: exercise.secondaryMuscles,
     guide: exercise.guide,
+    type: exercise.type,
   };
 }

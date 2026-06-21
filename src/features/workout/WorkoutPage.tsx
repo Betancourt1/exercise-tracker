@@ -32,7 +32,7 @@ import type {
   WorkoutStartRequest,
 } from "./types";
 import type { WorkoutExerciseGroup } from "./workoutBuilders";
-import type { Exercise } from "../../domain";
+import type { Exercise, ExerciseType } from "../../domain";
 
 type WorkoutPageProps = {
   startRequest: WorkoutStartRequest | null;
@@ -285,6 +285,7 @@ export function WorkoutPage({
           primaryMuscles: exercise.primaryMuscles,
           secondaryMuscles: exercise.secondaryMuscles,
           guide: exercise.guide,
+          type: exercise.type,
         },
         setIndex: maxSetIndex + 1,
         weightKg: null,
@@ -622,10 +623,22 @@ function WorkoutExerciseCard({
     .toUpperCase();
 
   const restSeconds = group.targetSnapshot?.restSeconds ?? 60;
-  const isCardio =
-    group.guideSnapshot?.guide?.setup?.some((s) =>
-      /cardio|correr|trotar|bicicleta|elíptica/i.test(s),
-    ) ?? false;
+  const exerciseType = group.guideSnapshot?.type ?? "reps";
+  const isCardio = exerciseType === "cardio";
+  const isDuration = exerciseType === "duration";
+
+  const targetLabel = (() => {
+    if (!group.targetSnapshot) return "";
+    const sets = group.targetSnapshot.targetSets;
+    const min = group.targetSnapshot.targetRepsMin;
+    const max = group.targetSnapshot.targetRepsMax;
+    const range = min === max ? `${min}` : `${min}-${max}`;
+    const unit = isCardio ? "min" : isDuration ? "seg" : "reps";
+    const rirSuffix = (!isCardio && !isDuration && group.targetSnapshot.targetRir !== null)
+      ? ` · RIR ${group.targetSnapshot.targetRir}`
+      : "";
+    return `${sets}×${range} ${unit}${rirSuffix}`;
+  })();
 
   return (
     <div className="workout-exercise-card">
@@ -641,10 +654,7 @@ function WorkoutExerciseCard({
               whiteSpace: "nowrap",
             }}
           >
-            {group.targetSnapshot.targetSets}×{group.targetSnapshot.targetRepsMin}
-            {group.targetSnapshot.targetRepsMax !== group.targetSnapshot.targetRepsMin
-              ? `-${group.targetSnapshot.targetRepsMax}`
-              : ""}
+            {targetLabel}
           </span>
         )}
       </div>
@@ -658,16 +668,18 @@ function WorkoutExerciseCard({
         {isResting ? (
           <button
             type="button"
+            className="rest-action-btn"
             onClick={onStopRest}
-            style={{ marginLeft: "auto", color: "var(--muted)", fontSize: "0.75rem" }}
+            style={{ marginLeft: 8 }}
           >
-            Detener
+            Saltar
           </button>
         ) : (
           <button
             type="button"
+            className="rest-action-btn"
             onClick={() => onStartRest(restSeconds)}
-            style={{ marginLeft: "auto", color: "var(--accent-text)", fontSize: "0.75rem" }}
+            style={{ marginLeft: 8 }}
           >
             Iniciar
           </button>
@@ -685,6 +697,11 @@ function WorkoutExerciseCard({
                 <th>KM</th>
                 <th>TIEMPO</th>
               </>
+            ) : isDuration ? (
+              <>
+                <th>KG</th>
+                <th>SEG</th>
+              </>
             ) : (
               <>
                 <th>KG</th>
@@ -700,7 +717,7 @@ function WorkoutExerciseCard({
               key={setLog.id}
               setLog={setLog}
               setNumber={index + 1}
-              isCardio={isCardio}
+              exerciseType={exerciseType}
               onUpdate={onUpdateSetLog}
             />
           ))}
@@ -721,17 +738,30 @@ function WorkoutExerciseCard({
 function WorkoutSetRow({
   setLog,
   setNumber,
-  isCardio,
+  exerciseType,
   onUpdate,
 }: {
   setLog: SetLog;
   setNumber: number;
-  isCardio: boolean;
+  exerciseType: ExerciseType;
   onUpdate: (setLogId: string, updates: Partial<SetLog>) => void;
 }) {
-  const previousText = setLog.weightKg != null && setLog.reps != null
-    ? `${setLog.weightKg}kg×${setLog.reps}`
-    : "—";
+  const isCardio = exerciseType === "cardio";
+  const isDuration = exerciseType === "duration";
+
+  const previousText = (() => {
+    if (setLog.weightKg != null && setLog.reps != null) {
+      if (isCardio) return `${setLog.weightKg}km×${setLog.reps}m`;
+      if (isDuration) return `${setLog.weightKg > 0 ? `${setLog.weightKg}kg×` : ""}${setLog.reps}s`;
+      return `${setLog.weightKg}kg×${setLog.reps}`;
+    }
+    if (setLog.reps != null) {
+      if (isCardio) return `${setLog.reps}min`;
+      if (isDuration) return `${setLog.reps}s`;
+      return `${setLog.reps} reps`;
+    }
+    return "—";
+  })();
 
   return (
     <tr className={`set-row${setLog.completed ? " completed" : ""}`}>
@@ -745,7 +775,7 @@ function WorkoutSetRow({
           type="number"
           min={0}
           step={isCardio ? 0.1 : 0.5}
-          placeholder={isCardio ? "0" : "kg"}
+          placeholder={isCardio ? "km" : "kg"}
           value={setLog.weightKg ?? ""}
           onChange={(e) => {
             const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
@@ -759,7 +789,7 @@ function WorkoutSetRow({
           type="number"
           min={0}
           step={1}
-          placeholder={isCardio ? "min" : "reps"}
+          placeholder={isCardio ? "min" : isDuration ? "seg" : "reps"}
           value={setLog.reps ?? ""}
           onChange={(e) => {
             const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));

@@ -13,10 +13,13 @@ export type ExerciseGuide = {
   commonMistakes: string[];
 };
 
+export type ExerciseType = "reps" | "duration" | "cardio";
+
 export type Exercise = {
   id: string;
   name: string;
   nameNormalized: string;
+  type: ExerciseType;
   primaryMuscles: string[];
   secondaryMuscles: string[];
   equipment: string[];
@@ -80,7 +83,7 @@ export type RoutineRevision = {
 
 export type ExerciseGuideSnapshot = Pick<
   Exercise,
-  "id" | "name" | "equipmentDetail" | "guide"
+  "id" | "name" | "equipmentDetail" | "guide" | "type"
 > & {
   primaryMuscles?: string[];
   secondaryMuscles?: string[];

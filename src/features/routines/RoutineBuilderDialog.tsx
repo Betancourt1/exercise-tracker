@@ -484,16 +484,28 @@ function RoutineExerciseEditor({
   onRemove: (routineExerciseId: string) => void;
   onUpdate: (routineExerciseId: string, updates: Partial<RoutineExercise>) => void;
 }) {
+  const exerciseType = exercise?.type ?? "reps";
+  const targetText = (() => {
+    const sets = routineExercise.targetSets;
+    const rMin = routineExercise.targetRepsMin;
+    const rMax = routineExercise.targetRepsMax;
+    const rangeStr = rMin === rMax ? `${rMin}` : `${rMin}-${rMax}`;
+
+    if (exerciseType === "duration") {
+      return `${sets} series · ${rangeStr} seg`;
+    }
+    if (exerciseType === "cardio") {
+      return `${sets} series · ${rangeStr} min`;
+    }
+    return `${sets} series · ${rangeStr} reps · RIR ${routineExercise.targetRir ?? "libre"}`;
+  })();
+
   return (
     <article className="builder-exercise-row">
       <div className="builder-exercise-title">
         <button type="button" onClick={onSelectGuide}>
           <strong>{exercise?.name ?? "Ejercicio guardado"}</strong>
-          <span>
-            {routineExercise.targetSets} series · {routineExercise.targetRepsMin}-
-            {routineExercise.targetRepsMax} reps · RIR{" "}
-            {routineExercise.targetRir ?? "libre"}
-          </span>
+          <span>{targetText}</span>
         </button>
         <div className="builder-row-actions">
           <button
@@ -534,29 +546,71 @@ function RoutineExerciseEditor({
             onUpdate(routineExercise.id, { targetSets: targetSets ?? 1 })
           }
         />
-        <NumberField
-          label="Reps mín."
-          value={routineExercise.targetRepsMin}
-          min={1}
-          onChange={(targetRepsMin) =>
-            onUpdate(routineExercise.id, { targetRepsMin: targetRepsMin ?? 1 })
-          }
-        />
-        <NumberField
-          label="Reps máx."
-          value={routineExercise.targetRepsMax}
-          min={1}
-          onChange={(targetRepsMax) =>
-            onUpdate(routineExercise.id, { targetRepsMax: targetRepsMax ?? 1 })
-          }
-        />
-        <NumberField
-          label="RIR"
-          value={routineExercise.targetRir}
-          min={0}
-          allowEmpty
-          onChange={(targetRir) => onUpdate(routineExercise.id, { targetRir })}
-        />
+        {exerciseType === "duration" ? (
+          <>
+            <NumberField
+              label="Seg. mín."
+              value={routineExercise.targetRepsMin}
+              min={1}
+              onChange={(targetRepsMin) =>
+                onUpdate(routineExercise.id, { targetRepsMin: targetRepsMin ?? 1 })
+              }
+            />
+            <NumberField
+              label="Seg. máx."
+              value={routineExercise.targetRepsMax}
+              min={1}
+              onChange={(targetRepsMax) =>
+                onUpdate(routineExercise.id, { targetRepsMax: targetRepsMax ?? 1 })
+              }
+            />
+          </>
+        ) : exerciseType === "cardio" ? (
+          <>
+            <NumberField
+              label="Min. mín."
+              value={routineExercise.targetRepsMin}
+              min={1}
+              onChange={(targetRepsMin) =>
+                onUpdate(routineExercise.id, { targetRepsMin: targetRepsMin ?? 1 })
+              }
+            />
+            <NumberField
+              label="Min. máx."
+              value={routineExercise.targetRepsMax}
+              min={1}
+              onChange={(targetRepsMax) =>
+                onUpdate(routineExercise.id, { targetRepsMax: targetRepsMax ?? 1 })
+              }
+            />
+          </>
+        ) : (
+          <>
+            <NumberField
+              label="Reps mín."
+              value={routineExercise.targetRepsMin}
+              min={1}
+              onChange={(targetRepsMin) =>
+                onUpdate(routineExercise.id, { targetRepsMin: targetRepsMin ?? 1 })
+              }
+            />
+            <NumberField
+              label="Reps máx."
+              value={routineExercise.targetRepsMax}
+              min={1}
+              onChange={(targetRepsMax) =>
+                onUpdate(routineExercise.id, { targetRepsMax: targetRepsMax ?? 1 })
+              }
+            />
+            <NumberField
+              label="RIR"
+              value={routineExercise.targetRir}
+              min={0}
+              allowEmpty
+              onChange={(targetRir) => onUpdate(routineExercise.id, { targetRir })}
+            />
+          </>
+        )}
         <NumberField
           label="Descanso"
           value={routineExercise.restSeconds}

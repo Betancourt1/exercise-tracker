@@ -226,6 +226,7 @@ function createExercise(id: string, name: string): Exercise {
     id,
     name,
     nameNormalized: name.toLocaleLowerCase("es-MX"),
+    type: "reps",
     primaryMuscles: ["pierna"],
     secondaryMuscles: [],
     equipment: ["barra"],

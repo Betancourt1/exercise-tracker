@@ -208,6 +208,7 @@ describe("analytics helpers", () => {
           guideSnapshot: {
             id: "sentadilla",
             name: "Sentadilla",
+            type: "reps",
             primaryMuscles: ["cuádriceps"],
             secondaryMuscles: ["glúteos"],
             guide: {
@@ -300,6 +301,7 @@ function createSetLog(overrides: Partial<SetLog> = {}): SetLog {
     guideSnapshot: {
       id: "sentadilla",
       name: "Sentadilla",
+      type: "reps",
       guide: {
         setup: ["Barra estable."],
         technique: ["Baja con control."],
@@ -330,6 +332,7 @@ function createExercise(overrides: Partial<Exercise> = {}): Exercise {
     id: "sentadilla",
     name: "Sentadilla",
     nameNormalized: "sentadilla",
+    type: "reps",
     primaryMuscles: ["cuádriceps"],
     secondaryMuscles: ["glúteos"],
     equipment: ["barra"],

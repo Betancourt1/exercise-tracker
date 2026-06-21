@@ -87,7 +87,7 @@ export const ROUTINE_PRESETS: RoutinePreset[] = [
           target("Sentadilla con peso corporal", 3, 10, 15, 3, 60),
           target("Flexiones", 3, 6, 12, 3, 75, "Inclina manos si necesitas regresión."),
           target("Puente de glúteos", 3, 10, 15, 2, 60),
-          target("Plancha", 3, 20, 45, null, 45, "Registra segundos como repeticiones."),
+          target("Plancha", 3, 20, 45, null, 45),
         ],
       },
       {
@@ -120,7 +120,7 @@ export const ROUTINE_PRESETS: RoutinePreset[] = [
           target("Peso muerto rumano", 3, 10, 12, 2, 45),
           target("Press militar", 3, 8, 10, 2, 45),
           target("Remo con mancuerna", 3, 10, 12, 2, 45, "Por lado."),
-          target("Farmer carry", 3, 30, 45, null, 60, "Registra segundos como repeticiones."),
+          target("Farmer carry", 3, 30, 45, null, 60),
         ],
       },
       {
@@ -130,7 +130,7 @@ export const ROUTINE_PRESETS: RoutinePreset[] = [
           target("Zancadas", 3, 10, 12, 3, 45, "Por lado."),
           target("Sentadilla goblet", 3, 10, 12, 2, 45),
           target("Pallof press", 3, 10, 12, null, 45, "Por lado."),
-          target("Plancha", 3, 30, 45, null, 45, "Registra segundos como repeticiones."),
+          target("Plancha", 3, 30, 45, null, 45),
         ],
       },
       {

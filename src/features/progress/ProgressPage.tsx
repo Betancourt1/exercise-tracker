@@ -24,7 +24,7 @@ import { loadProgressAnalytics } from "./progressQueries";
 import { BodyMuscleMap, ExerciseVideoSnippet } from "../exerciseVisuals";
 import { ExerciseDetailSheet } from "../exercises/ExerciseDetailSheet";
 import { listSeededAvailableExercises } from "../../data";
-import type { Exercise } from "../../domain";
+import type { Exercise, ExerciseType } from "../../domain";
 
 type ProgressPageProps = {
   onTrain: () => void;
@@ -476,6 +476,9 @@ function ExerciseDetailPanel({ exercise }: { exercise: ProgressExerciseDetail })
     ...chronologicalSets.map((set) => set.estimatedOneRepMax ?? 0),
     1,
   );
+  const exerciseType = exercise.guideSnapshot?.type ?? "reps";
+  const isCardio = exerciseType === "cardio";
+  const isDuration = exerciseType === "duration";
 
   return (
     <article className="panel progress-exercise-detail">
@@ -488,28 +491,70 @@ function ExerciseDetailPanel({ exercise }: { exercise: ProgressExerciseDetail })
       </div>
 
       <div className="progress-mini-metrics">
-        <div>
-          <span>Mejor 1RM estimado</span>
-          <strong>
-            {exercise.bestEstimatedOneRepMax === null
-              ? "-"
-              : `${formatDecimalKg(exercise.bestEstimatedOneRepMax)} kg`}
-          </strong>
-        </div>
-        <div>
-          <span>Mejor peso</span>
-          <strong>
-            {exercise.bestWeightKg === null
-              ? "-"
-              : `${formatDecimalKg(exercise.bestWeightKg)} kg x ${
-                  exercise.bestWeightReps ?? "-"
-                }`}
-          </strong>
-        </div>
-        <div>
-          <span>Volumen</span>
-          <strong>{formatKg(exercise.totalVolumeKg)} kg</strong>
-        </div>
+        {isCardio ? (
+          <>
+            <div>
+              <span>Mejor tiempo</span>
+              <strong>
+                {exercise.bestWeightReps === null
+                  ? "-"
+                  : `${exercise.bestWeightReps} min`}
+              </strong>
+            </div>
+            <div>
+              <span>Mejor distancia</span>
+              <strong>
+                {exercise.bestWeightKg === null
+                  ? "-"
+                  : `${formatDecimalKg(exercise.bestWeightKg)} km`}
+              </strong>
+            </div>
+          </>
+        ) : isDuration ? (
+          <>
+            <div>
+              <span>Mejor tiempo</span>
+              <strong>
+                {exercise.bestWeightReps === null
+                  ? "-"
+                  : `${exercise.bestWeightReps} seg`}
+              </strong>
+            </div>
+            <div>
+              <span>Mayor peso</span>
+              <strong>
+                {exercise.bestWeightKg === null || exercise.bestWeightKg === 0
+                  ? "B.W."
+                  : `${formatDecimalKg(exercise.bestWeightKg)} kg`}
+              </strong>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <span>Mejor 1RM estimado</span>
+              <strong>
+                {exercise.bestEstimatedOneRepMax === null
+                  ? "-"
+                  : `${formatDecimalKg(exercise.bestEstimatedOneRepMax)} kg`}
+              </strong>
+            </div>
+            <div>
+              <span>Mejor peso</span>
+              <strong>
+                {exercise.bestWeightKg === null
+                  ? "-"
+                  : `${formatDecimalKg(exercise.bestWeightKg)} kg x ${
+                      exercise.bestWeightReps ?? "-"
+                    }`}
+              </strong>
+            </div>
+            <div>
+              <span>Volumen</span>
+              <strong>{formatKg(exercise.totalVolumeKg)} kg</strong>
+            </div>
+          </>
+        )}
       </div>
 
       {exercise.primaryMuscles.length > 0 || exercise.secondaryMuscles.length > 0 ? (
@@ -521,45 +566,56 @@ function ExerciseDetailPanel({ exercise }: { exercise: ProgressExerciseDetail })
         />
       ) : null}
 
-      <div
-        className="progress-estimate-chart"
-        role="img"
-        aria-label={`1RM estimado reciente para ${exercise.exerciseName}`}
-      >
-        {chronologicalSets.map((set) => (
-          <div className="progress-estimate-point" key={set.setLogId}>
-            <span
-              style={{
-                height: `${Math.max(
-                  10,
-                  ((set.estimatedOneRepMax ?? 0) / maxEstimatedOneRepMax) * 100,
-                )}%`,
-              }}
-            />
-            <small>{formatCompactDate(set.completedAt)}</small>
-          </div>
-        ))}
-      </div>
+      {!isCardio && !isDuration && chronologicalSets.some((s) => s.estimatedOneRepMax != null) ? (
+        <div
+          className="progress-estimate-chart"
+          role="img"
+          aria-label={`1RM estimado reciente para ${exercise.exerciseName}`}
+        >
+          {chronologicalSets.map((set) => (
+            <div className="progress-estimate-point" key={set.setLogId}>
+              <span
+                style={{
+                  height: `${Math.max(
+                    10,
+                    ((set.estimatedOneRepMax ?? 0) / maxEstimatedOneRepMax) * 100,
+                  )}%`,
+                }}
+              />
+              <small>{formatCompactDate(set.completedAt)}</small>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
-      <SetHistory sets={exercise.recentSets} />
+      <SetHistory sets={exercise.recentSets} exerciseType={exerciseType} />
     </article>
   );
 }
 
-function SetHistory({ sets }: { sets: ProgressExerciseSet[] }) {
+function SetHistory({ sets, exerciseType }: { sets: ProgressExerciseSet[]; exerciseType: ExerciseType }) {
+  const isCardio = exerciseType === "cardio";
+  const isDuration = exerciseType === "duration";
+
   return (
     <div className="progress-set-history">
       <strong>Series recientes</strong>
-      {sets.map((set) => (
-        <div className="progress-set-row" key={set.setLogId}>
-          <span>{formatCompactDate(set.completedAt)}</span>
-          <strong>
-            {formatDecimalKg(set.weightKg)} kg x {set.reps}
-          </strong>
-          <span>{set.rir === null ? "RIR -" : `RIR ${set.rir}`}</span>
-          <span>{set.isPr ? "PR" : `${formatKg(set.volumeKg)} kg`}</span>
-        </div>
-      ))}
+      {sets.map((set) => {
+        const text = (() => {
+          if (isCardio) return `${formatDecimalKg(set.weightKg)} km x ${set.reps} min`;
+          if (isDuration) return `${set.weightKg > 0 ? `${formatDecimalKg(set.weightKg)} kg x ` : ""}${set.reps}s`;
+          return `${formatDecimalKg(set.weightKg)} kg x ${set.reps}`;
+        })();
+
+        return (
+          <div className="progress-set-row" key={set.setLogId}>
+            <span>{formatCompactDate(set.completedAt)}</span>
+            <strong>{text}</strong>
+            <span>{isCardio || isDuration ? "" : (set.rir === null ? "RIR -" : `RIR ${set.rir}`)}</span>
+            <span>{isCardio || isDuration ? "" : (set.isPr ? "PR" : `${formatKg(set.volumeKg)} kg`)}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -611,9 +667,20 @@ function ExerciseGuidePanel({
           <Medal size={16} />
           <span>
             Objetivo guardado: {targetSnapshot.targetSets} series,{" "}
-            {targetSnapshot.targetRepsMin}-{targetSnapshot.targetRepsMax} reps
-            {targetSnapshot.targetRir === null ? "" : `, RIR ${targetSnapshot.targetRir}`} ·{" "}
-            descanso {formatDuration(targetSnapshot.restSeconds)}
+            {targetSnapshot.targetRepsMin === targetSnapshot.targetRepsMax
+              ? targetSnapshot.targetRepsMin
+              : `${targetSnapshot.targetRepsMin}-${targetSnapshot.targetRepsMax}`
+            }{" "}
+            {guideSnapshot?.type === "cardio"
+              ? "min"
+              : guideSnapshot?.type === "duration"
+              ? "seg"
+              : "reps"
+            }
+            {guideSnapshot?.type !== "cardio" && guideSnapshot?.type !== "duration" && targetSnapshot.targetRir !== null
+              ? `, RIR ${targetSnapshot.targetRir}`
+              : ""}{" "}
+            · descanso {formatDuration(targetSnapshot.restSeconds)}
           </span>
         </div>
       ) : null}
