@@ -44,9 +44,10 @@ export const DEFAULT_ROUTINE_EXERCISE_TARGET = {
   targetRepsMax: 12,
   targetRir: 2,
   restSeconds: 90,
+  targetWeightKg: null,
 } satisfies Pick<
   RoutineExercise,
-  "targetSets" | "targetRepsMin" | "targetRepsMax" | "targetRir" | "restSeconds"
+  "targetSets" | "targetRepsMin" | "targetRepsMax" | "targetRir" | "restSeconds" | "targetWeightKg"
 >;
 
 export function buildRoutineGraph(input: RoutineGraphInput): {
