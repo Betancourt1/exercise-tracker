@@ -321,6 +321,7 @@ function createSetLog(overrides: Partial<SetLog> = {}): SetLog {
       targetRepsMax: 8,
       targetRir: 2,
       restSeconds: 120,
+      targetWeightKg: null,
     },
     notes: "",
     ...overrides,
