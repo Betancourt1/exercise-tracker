@@ -56,6 +56,7 @@ describe("routine graph builder", () => {
       targetRir: 2,
       restSeconds: 90,
       notes: "",
+      targetWeightKg: null,
     });
   });
 
@@ -216,5 +217,6 @@ function createRoutineExercise(id: string, sortOrder: number): RoutineExercise {
     targetRir: 2,
     restSeconds: 90,
     notes: "",
+    targetWeightKg: null,
   };
 }
