@@ -83,7 +83,7 @@ export function buildWorkoutDraftFromRoutine(
           exerciseNameSnapshot: exercise?.name ?? "Ejercicio guardado",
           guideSnapshot: exercise ? createGuideSnapshot(exercise) : null,
           setIndex,
-          weightKg: null,
+          weightKg: routineExercise.targetWeightKg ?? null,
           reps: routineExercise.targetRepsMin,
           rir: routineExercise.targetRir,
           completed: false,
@@ -143,6 +143,7 @@ function createTargetSnapshot(
     targetRepsMax: routineExercise.targetRepsMax,
     targetRir: routineExercise.targetRir,
     restSeconds: routineExercise.restSeconds,
+    targetWeightKg: routineExercise.targetWeightKg ?? null,
   };
 }
 
@@ -155,5 +156,6 @@ function createGuideSnapshot(exercise: Exercise): ExerciseGuideSnapshot {
     secondaryMuscles: exercise.secondaryMuscles,
     guide: exercise.guide,
     type: exercise.type,
+    weightRelevant: exercise.weightRelevant,
   };
 }
