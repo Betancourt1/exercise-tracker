@@ -5,7 +5,7 @@ import type { Exercise, ExerciseType, SetLog, WorkoutSession } from "../../domai
 import { ExerciseVisualPanel } from "../exerciseVisuals";
 
 type DetailTab = "resumen" | "historia" | "indicaciones";
-type MetricPill = "peso" | "1rm" | "volumen-serie" | "tiempo" | "distancia";
+type MetricPill = "peso" | "1rm" | "volumen-serie" | "tiempo" | "distancia" | "repeticiones";
 
 type ExerciseDetailSheetProps = {
   exercise: Exercise | null;
@@ -44,7 +44,7 @@ export function ExerciseDetailSheet({
     } else if (exercise.type === "cardio") {
       setActiveMetric("distancia");
     } else {
-      setActiveMetric("peso");
+      setActiveMetric(exercise.weightRelevant === false ? "repeticiones" : "peso");
     }
   }, [exercise]);
 
@@ -136,6 +136,16 @@ export function ExerciseDetailSheet({
     [completedSets],
   );
 
+  const bestReps = useMemo(() => {
+    let max = 0;
+    for (const s of completedSets) {
+      if (s.reps != null && s.reps > max) {
+        max = s.reps;
+      }
+    }
+    return max > 0 ? max : null;
+  }, [completedSets]);
+
   // Chart data
   const chartPoints = useMemo(() => {
     const points = [...completedSets]
@@ -146,6 +156,7 @@ export function ExerciseDetailSheet({
         if (activeMetric === "peso") value = s.weightKg ?? 0;
         else if (activeMetric === "tiempo") value = s.reps ?? 0;
         else if (activeMetric === "distancia") value = s.weightKg ?? 0;
+        else if (activeMetric === "repeticiones") value = s.reps ?? 0;
         else if (activeMetric === "1rm") value = estimatedOneRepMax(s.weightKg ?? 0, s.reps ?? 0);
         else if (activeMetric === "volumen-serie") value = (s.weightKg ?? 0) * (s.reps ?? 0);
         return { value, date: s.completedAt ?? "" };
@@ -237,6 +248,7 @@ export function ExerciseDetailSheet({
             best1RM={best1RM}
             bestSetVolume={bestSetVolume}
             totalVolume={totalVolume}
+            bestReps={bestReps}
             hasData={completedSets.length > 0}
             showRecords={showRecords}
             isLoading={isLoadingData}
@@ -251,6 +263,7 @@ export function ExerciseDetailSheet({
             formatDate={formatDate}
             formatKg={formatKg}
             exerciseType={exercise.type || "reps"}
+            weightRelevant={exercise.weightRelevant !== false}
           />
         )}
         {activeTab === "indicaciones" && (
@@ -287,6 +300,7 @@ function ResumenTab({
   best1RM,
   bestSetVolume,
   totalVolume,
+  bestReps,
   hasData,
   showRecords,
   isLoading,
@@ -304,6 +318,7 @@ function ResumenTab({
   best1RM: number | null;
   bestSetVolume: number | null;
   totalVolume: number;
+  bestReps: number | null;
   hasData: boolean;
   showRecords: boolean;
   isLoading: boolean;
@@ -314,6 +329,7 @@ function ResumenTab({
   const exerciseType = exercise.type ?? "reps";
   const isCardio = exerciseType === "cardio";
   const isDuration = exerciseType === "duration";
+  const weightRelevant = exercise.weightRelevant !== false;
 
   return (
     <>
@@ -346,43 +362,49 @@ function ResumenTab({
       {/* Metric pills */}
       {hasData && (
         <div className="detail-section">
-          <div className="detail-metric-pills" style={{ marginBottom: 12 }}>
-            {isCardio ? (
-              <>
-                <button
-                  type="button"
-                  className={`detail-metric-pill${activeMetric === "distancia" ? " active" : ""}`}
-                  onClick={() => onMetricChange("distancia")}
-                >
-                  Distancia
-                </button>
-                <button
-                  type="button"
-                  className={`detail-metric-pill${activeMetric === "tiempo" ? " active" : ""}`}
-                  onClick={() => onMetricChange("tiempo")}
-                >
-                  Tiempo
-                </button>
-              </>
-            ) : isDuration ? (
-              <>
-                <button
-                  type="button"
-                  className={`detail-metric-pill${activeMetric === "tiempo" ? " active" : ""}`}
-                  onClick={() => onMetricChange("tiempo")}
-                >
-                  Tiempo
-                </button>
-                <button
-                  type="button"
-                  className={`detail-metric-pill${activeMetric === "peso" ? " active" : ""}`}
-                  onClick={() => onMetricChange("peso")}
-                >
-                  Peso
-                </button>
-              </>
-            ) : (
-              (["peso", "1rm", "volumen-serie"] as MetricPill[]).map((m) => (
+          {((isCardio) || (isDuration && weightRelevant)) && (
+            <div className="detail-metric-pills" style={{ marginBottom: 12 }}>
+              {isCardio ? (
+                <>
+                  <button
+                    type="button"
+                    className={`detail-metric-pill${activeMetric === "distancia" ? " active" : ""}`}
+                    onClick={() => onMetricChange("distancia")}
+                  >
+                    Distancia
+                  </button>
+                  <button
+                    type="button"
+                    className={`detail-metric-pill${activeMetric === "tiempo" ? " active" : ""}`}
+                    onClick={() => onMetricChange("tiempo")}
+                  >
+                    Tiempo
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={`detail-metric-pill${activeMetric === "tiempo" ? " active" : ""}`}
+                    onClick={() => onMetricChange("tiempo")}
+                  >
+                    Tiempo
+                  </button>
+                  <button
+                    type="button"
+                    className={`detail-metric-pill${activeMetric === "peso" ? " active" : ""}`}
+                    onClick={() => onMetricChange("peso")}
+                  >
+                    Peso
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {!isCardio && !isDuration && weightRelevant && (
+            <div className="detail-metric-pills" style={{ marginBottom: 12 }}>
+              {(["peso", "1rm", "volumen-serie"] as MetricPill[]).map((m) => (
                 <button
                   key={m}
                   type="button"
@@ -391,9 +413,9 @@ function ResumenTab({
                 >
                   {m === "peso" ? "Mayor Peso" : m === "1rm" ? "One Rep Max" : "Volumen Serie"}
                 </button>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Chart */}
           {isLoading ? (
@@ -482,40 +504,53 @@ function ResumenTab({
                     {bestDuration ? `${bestDuration} seg` : "—"}
                   </span>
                 </div>
-                <div className="pr-row">
-                  <span className="pr-row-label">Mayor Peso</span>
-                  <span className="pr-row-value">
-                    {bestWeight && bestWeight.weight > 0 ? `${formatKg(bestWeight.weight)} kg` : "B.W."}
-                  </span>
-                </div>
+                {weightRelevant && (
+                  <div className="pr-row">
+                    <span className="pr-row-label">Mayor Peso</span>
+                    <span className="pr-row-value">
+                      {bestWeight && bestWeight.weight > 0 ? `${formatKg(bestWeight.weight)} kg` : "B.W."}
+                    </span>
+                  </div>
+                )}
               </>
             )}
             {!isCardio && !isDuration && (
               <>
-                <div className="pr-row">
-                  <span className="pr-row-label">Mayor Peso</span>
-                  <span className="pr-row-value">
-                    {bestWeight ? `${formatKg(bestWeight.weight)} kg × ${bestWeight.reps}` : "—"}
-                  </span>
-                </div>
-                <div className="pr-row">
-                  <span className="pr-row-label">Mejor 1RM</span>
-                  <span className="pr-row-value">
-                    {best1RM ? `${formatKg(best1RM)} kg` : "—"}
-                  </span>
-                </div>
-                <div className="pr-row">
-                  <span className="pr-row-label">Mejor Volumen (Serie)</span>
-                  <span className="pr-row-value">
-                    {bestSetVolume ? `${formatKg(bestSetVolume)} kg` : "—"}
-                  </span>
-                </div>
-                <div className="pr-row">
-                  <span className="pr-row-label">Volumen Total</span>
-                  <span className="pr-row-value">
-                    {totalVolume > 0 ? `${formatKg(totalVolume)} kg` : "—"}
-                  </span>
-                </div>
+                {weightRelevant ? (
+                  <>
+                    <div className="pr-row">
+                      <span className="pr-row-label">Mayor Peso</span>
+                      <span className="pr-row-value">
+                        {bestWeight ? `${formatKg(bestWeight.weight)} kg × ${bestWeight.reps}` : "—"}
+                      </span>
+                    </div>
+                    <div className="pr-row">
+                      <span className="pr-row-label">Mejor 1RM</span>
+                      <span className="pr-row-value">
+                        {best1RM ? `${formatKg(best1RM)} kg` : "—"}
+                      </span>
+                    </div>
+                    <div className="pr-row">
+                      <span className="pr-row-label">Mejor Volumen (Serie)</span>
+                      <span className="pr-row-value">
+                        {bestSetVolume ? `${formatKg(bestSetVolume)} kg` : "—"}
+                      </span>
+                    </div>
+                    <div className="pr-row">
+                      <span className="pr-row-label">Volumen Total</span>
+                      <span className="pr-row-value">
+                        {totalVolume > 0 ? `${formatKg(totalVolume)} kg` : "—"}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="pr-row">
+                    <span className="pr-row-label">Mejor Serie</span>
+                    <span className="pr-row-value">
+                      {bestReps ? `${bestReps} reps` : "—"}
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </>
@@ -532,11 +567,13 @@ function HistoriaTab({
   formatDate,
   formatKg,
   exerciseType,
+  weightRelevant,
 }: {
   history: SessionSummary[];
   formatDate: (iso: string) => string;
   formatKg: (v: number) => string;
   exerciseType: ExerciseType;
+  weightRelevant: boolean;
 }) {
   if (history.length === 0) {
     return (
@@ -568,8 +605,16 @@ function HistoriaTab({
               {completedSets.map((s, i) => {
                 const text = (() => {
                   if (isCardio) return `${s.weightKg ?? "—"} km × ${s.reps ?? "—"} min`;
-                  if (isDuration) return `${s.weightKg && s.weightKg > 0 ? `${s.weightKg} kg × ` : ""}${s.reps ?? "—"}s`;
-                  return `${s.weightKg ?? "—"} kg × ${s.reps ?? "—"}`;
+                  if (isDuration) {
+                    if (weightRelevant) {
+                      return `${s.weightKg && s.weightKg > 0 ? `${s.weightKg} kg × ` : ""}${s.reps ?? "—"}s`;
+                    }
+                    return `${s.reps ?? "—"}s`;
+                  }
+                  if (weightRelevant) {
+                    return `${s.weightKg ?? "—"} kg × ${s.reps ?? "—"}`;
+                  }
+                  return `${s.reps ?? "—"} reps`;
                 })();
 
                 return (
@@ -578,7 +623,7 @@ function HistoriaTab({
                   </span>
                 );
               })}
-              {!isCardio && !isDuration && vol > 0 && (
+              {!isCardio && !isDuration && weightRelevant && vol > 0 && (
                 <span style={{ color: "var(--muted)", fontSize: "0.8125rem" }}>
                   · {formatKg(vol)} kg vol.
                 </span>
