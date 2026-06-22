@@ -485,19 +485,23 @@ function RoutineExerciseEditor({
   onUpdate: (routineExerciseId: string, updates: Partial<RoutineExercise>) => void;
 }) {
   const exerciseType = exercise?.type ?? "reps";
+  const weightRelevant = exercise?.weightRelevant !== false;
   const targetText = (() => {
     const sets = routineExercise.targetSets;
     const rMin = routineExercise.targetRepsMin;
     const rMax = routineExercise.targetRepsMax;
     const rangeStr = rMin === rMax ? `${rMin}` : `${rMin}-${rMax}`;
+    const weightSuffix = (weightRelevant && routineExercise.targetWeightKg !== null && routineExercise.targetWeightKg !== undefined)
+      ? ` · ${routineExercise.targetWeightKg} kg`
+      : "";
 
     if (exerciseType === "duration") {
-      return `${sets} series · ${rangeStr} seg`;
+      return `${sets} series · ${rangeStr} seg${weightSuffix}`;
     }
     if (exerciseType === "cardio") {
       return `${sets} series · ${rangeStr} min`;
     }
-    return `${sets} series · ${rangeStr} reps · RIR ${routineExercise.targetRir ?? "libre"}`;
+    return `${sets} series · ${rangeStr} reps · RIR ${routineExercise.targetRir ?? "libre"}${weightSuffix}`;
   })();
 
   return (
@@ -564,6 +568,17 @@ function RoutineExerciseEditor({
                 onUpdate(routineExercise.id, { targetRepsMax: targetRepsMax ?? 1 })
               }
             />
+            {weightRelevant && (
+              <NumberField
+                label="Peso (kg)"
+                value={routineExercise.targetWeightKg ?? null}
+                min={0}
+                allowEmpty
+                onChange={(targetWeightKg) =>
+                  onUpdate(routineExercise.id, { targetWeightKg })
+                }
+              />
+            )}
           </>
         ) : exerciseType === "cardio" ? (
           <>
@@ -609,6 +624,17 @@ function RoutineExerciseEditor({
               allowEmpty
               onChange={(targetRir) => onUpdate(routineExercise.id, { targetRir })}
             />
+            {weightRelevant && (
+              <NumberField
+                label="Peso (kg)"
+                value={routineExercise.targetWeightKg ?? null}
+                min={0}
+                allowEmpty
+                onChange={(targetWeightKg) =>
+                  onUpdate(routineExercise.id, { targetWeightKg })
+                }
+              />
+            )}
           </>
         )}
         <NumberField
