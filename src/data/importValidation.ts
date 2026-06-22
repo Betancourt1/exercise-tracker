@@ -84,13 +84,25 @@ function validateStoreArrays(data: Record<string, unknown>): DataValidationResul
       exercises: (data.exercises as Exercise[]).map((e) => ({
         ...e,
         type: e.type || "reps",
+        weightRelevant: e.weightRelevant ?? true,
       })),
       routines: data.routines as Routine[],
       routineDays: data.routineDays as RoutineDay[],
       routineExercises: data.routineExercises as RoutineExercise[],
       routineRevisions: data.routineRevisions as RoutineRevision[],
       workoutSessions: data.workoutSessions as WorkoutSession[],
-      setLogs: data.setLogs as SetLog[],
+      setLogs: (data.setLogs as SetLog[]).map((s) => {
+        if (s.guideSnapshot) {
+          return {
+            ...s,
+            guideSnapshot: {
+              ...s.guideSnapshot,
+              weightRelevant: s.guideSnapshot.weightRelevant ?? true,
+            },
+          };
+        }
+        return s;
+      }),
       settings: data.settings as Settings[],
     },
   };
@@ -120,6 +132,12 @@ function validateExercises(records: Exercise[]): string | null {
       record.type !== "cardio"
     ) {
       return "type no es válido";
+    }
+    if (
+      record.weightRelevant !== undefined &&
+      typeof record.weightRelevant !== "boolean"
+    ) {
+      return "weightRelevant debe ser boolean";
     }
     if (!isStringArray(record.primaryMuscles)) return "requiere primaryMuscles";
     if (!isStringArray(record.secondaryMuscles)) return "requiere secondaryMuscles";
