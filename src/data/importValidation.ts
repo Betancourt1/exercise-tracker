@@ -88,20 +88,33 @@ function validateStoreArrays(data: Record<string, unknown>): DataValidationResul
       })),
       routines: data.routines as Routine[],
       routineDays: data.routineDays as RoutineDay[],
-      routineExercises: data.routineExercises as RoutineExercise[],
+      routineExercises: (data.routineExercises as RoutineExercise[]).map((re) => ({
+        ...re,
+        targetWeightKg: re.targetWeightKg ?? null,
+      })),
       routineRevisions: data.routineRevisions as RoutineRevision[],
       workoutSessions: data.workoutSessions as WorkoutSession[],
       setLogs: (data.setLogs as SetLog[]).map((s) => {
+        let updated = s;
         if (s.guideSnapshot) {
-          return {
-            ...s,
+          updated = {
+            ...updated,
             guideSnapshot: {
               ...s.guideSnapshot,
               weightRelevant: s.guideSnapshot.weightRelevant ?? true,
             },
           };
         }
-        return s;
+        if (updated.targetSnapshot) {
+          updated = {
+            ...updated,
+            targetSnapshot: {
+              ...updated.targetSnapshot,
+              targetWeightKg: updated.targetSnapshot.targetWeightKg ?? null,
+            },
+          };
+        }
+        return updated;
       }),
       settings: data.settings as Settings[],
     },
@@ -206,6 +219,13 @@ function validateRoutineExercises(records: RoutineExercise[]): string | null {
     if (record.targetRir !== null && !isFiniteNumber(record.targetRir)) return "targetRir inválido";
     if (!isFiniteNumber(record.restSeconds) || record.restSeconds < 0) return "restSeconds inválido";
     if (typeof record.notes !== "string") return "requiere notes";
+    if (
+      record.targetWeightKg !== undefined &&
+      record.targetWeightKg !== null &&
+      (!isFiniteNumber(record.targetWeightKg) || record.targetWeightKg < 0)
+    ) {
+      return "targetWeightKg debe ser un número no negativo o null";
+    }
     return null;
   });
 }
@@ -480,7 +500,10 @@ function isTargetSnapshot(value: unknown): boolean {
     isPositiveInteger(value.targetRepsMax) &&
     (value.targetRir === null || isFiniteNumber(value.targetRir)) &&
     isFiniteNumber(value.restSeconds) &&
-    value.restSeconds >= 0
+    value.restSeconds >= 0 &&
+    (value.targetWeightKg === undefined ||
+      value.targetWeightKg === null ||
+      (isFiniteNumber(value.targetWeightKg) && value.targetWeightKg >= 0))
   );
 }
 
