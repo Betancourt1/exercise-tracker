@@ -263,6 +263,47 @@ export function BodyMuscleMap({
         role="img"
         aria-label={ariaLabel}
       >
+        <defs>
+          <linearGradient id="mannequin-grad-inactive" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#1e293b" />
+            <stop offset="30%" stopColor="#334155" />
+            <stop offset="50%" stopColor="#475569" />
+            <stop offset="70%" stopColor="#334155" />
+            <stop offset="100%" stopColor="#1e293b" />
+          </linearGradient>
+
+          <linearGradient id="mannequin-grad-primary" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#1d4ed8" />
+            <stop offset="30%" stopColor="#2563eb" />
+            <stop offset="50%" stopColor="#60a5fa" />
+            <stop offset="70%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#1d4ed8" />
+          </linearGradient>
+
+          <linearGradient id="mannequin-grad-secondary" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#0369a1" />
+            <stop offset="35%" stopColor="#0284c7" />
+            <stop offset="50%" stopColor="#7dd3fc" />
+            <stop offset="65%" stopColor="#0284c7" />
+            <stop offset="100%" stopColor="#0369a1" />
+          </linearGradient>
+
+          <linearGradient id="mannequin-grad-heat" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#b45309" />
+            <stop offset="35%" stopColor="#d97706" />
+            <stop offset="50%" stopColor="#fbbf24" />
+            <stop offset="65%" stopColor="#d97706" />
+            <stop offset="100%" stopColor="#b45309" />
+          </linearGradient>
+
+          <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1.2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         <BodyOutline offsetX={0} label="Frente" />
         <BodyOutline offsetX={110} label="Espalda" />
         {[...FRONT_REGIONS, ...BACK_REGIONS].map((region) => {
@@ -348,19 +389,35 @@ function BodyOutline({ offsetX, label }: { offsetX: number; label: string }) {
       <text x={offsetX + 55} y="232" textAnchor="middle">
         {label}
       </text>
-      <circle cx={offsetX + 55} cy="22" r="12" />
-      <path d={`M${offsetX + 49} 35 H${offsetX + 61} L${offsetX + 64} 49 H${offsetX + 46} Z`} />
+      <circle cx={offsetX + 55} cy="22" r="12" className="body-part-solid" />
+      <path
+        d={`M${offsetX + 49} 35 H${offsetX + 61} L${offsetX + 64} 49 H${offsetX + 46} Z`}
+        className="body-part-solid"
+      />
       <path
         d={`M${offsetX + 34} 52 C${offsetX + 42} 43 ${offsetX + 68} 43 ${
           offsetX + 76
         } 52 L${offsetX + 70} 126 C${offsetX + 63} 133 ${offsetX + 47} 133 ${
           offsetX + 40
         } 126 Z`}
+        className="body-part-solid"
       />
-      <path d={`M${offsetX + 31} 62 C${offsetX + 20} 86 ${offsetX + 21} 118 ${offsetX + 30} 140`} />
-      <path d={`M${offsetX + 79} 62 C${offsetX + 90} 86 ${offsetX + 89} 118 ${offsetX + 80} 140`} />
-      <path d={`M${offsetX + 43} 127 L${offsetX + 36} 224`} />
-      <path d={`M${offsetX + 67} 127 L${offsetX + 74} 224`} />
+      <path
+        d={`M${offsetX + 31} 62 C${offsetX + 20} 86 ${offsetX + 21} 118 ${offsetX + 30} 140`}
+        className="body-part-line"
+      />
+      <path
+        d={`M${offsetX + 79} 62 C${offsetX + 90} 86 ${offsetX + 89} 118 ${offsetX + 80} 140`}
+        className="body-part-line"
+      />
+      <path
+        d={`M${offsetX + 43} 127 L${offsetX + 36} 224`}
+        className="body-part-line"
+      />
+      <path
+        d={`M${offsetX + 67} 127 L${offsetX + 74} 224`}
+        className="body-part-line"
+      />
     </g>
   );
 }
