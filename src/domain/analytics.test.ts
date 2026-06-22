@@ -333,6 +333,7 @@ function createExercise(overrides: Partial<Exercise> = {}): Exercise {
     name: "Sentadilla",
     nameNormalized: "sentadilla",
     type: "reps",
+    weightRelevant: true,
     primaryMuscles: ["cuádriceps"],
     secondaryMuscles: ["glúteos"],
     equipment: ["barra"],
