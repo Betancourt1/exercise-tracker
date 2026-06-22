@@ -281,6 +281,7 @@ function createRoutineExercise(): RoutineExercise {
     targetRir: 2,
     restSeconds: 120,
     notes: "",
+    targetWeightKg: null,
   };
 }
 
@@ -346,6 +347,7 @@ function createSetLog(): SetLog {
       targetRepsMax: 8,
       targetRir: 2,
       restSeconds: 120,
+      targetWeightKg: null,
     },
     notes: "",
   };
