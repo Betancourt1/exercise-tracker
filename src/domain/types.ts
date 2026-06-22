@@ -65,6 +65,7 @@ export type RoutineExercise = {
   targetRir: number | null;
   restSeconds: number;
   notes: string;
+  targetWeightKg?: number | null;
 };
 
 export type RoutineRevisionSnapshot = {
@@ -98,6 +99,7 @@ export type RoutineExerciseTargetSnapshot = Pick<
   | "targetRepsMax"
   | "targetRir"
   | "restSeconds"
+  | "targetWeightKg"
 >;
 
 export type WorkoutSession = {
