@@ -516,7 +516,6 @@ export function WorkoutPage({
                 className="secondary-button"
                 type="button"
                 onClick={() => setShowDiscardConfirm(true)}
-                style={{ marginRight: "auto" }}
               >
                 <Trash2 size={15} />
                 Descartar
