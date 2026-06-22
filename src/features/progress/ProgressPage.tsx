@@ -459,9 +459,28 @@ function ExerciseSelector({
           >
             <strong>{exercise.exerciseName}</strong>
             <span>
-              {exercise.bestEstimatedOneRepMax === null
-                ? "Sin 1RM estimado"
-                : `${formatDecimalKg(exercise.bestEstimatedOneRepMax)} kg e1RM`}
+              {(() => {
+                const type = exercise.guideSnapshot?.type ?? "reps";
+                const weightRelevant = exercise.guideSnapshot?.weightRelevant !== false;
+                if (type === "cardio") {
+                  return exercise.bestWeightKg === null
+                    ? "Sin distancia registrada"
+                    : `${formatDecimalKg(exercise.bestWeightKg)} km máx`;
+                }
+                if (type === "duration") {
+                  return exercise.bestWeightReps === null
+                    ? "Sin tiempo registrado"
+                    : `${exercise.bestWeightReps} seg máx`;
+                }
+                if (!weightRelevant) {
+                  return exercise.bestWeightReps === null
+                    ? "Sin repeticiones registradas"
+                    : `${exercise.bestWeightReps} reps máx`;
+                }
+                return exercise.bestEstimatedOneRepMax === null
+                  ? "Sin 1RM estimado"
+                  : `${formatDecimalKg(exercise.bestEstimatedOneRepMax)} kg e1RM`;
+              })()}
             </span>
           </button>
         ))}
@@ -479,6 +498,7 @@ function ExerciseDetailPanel({ exercise }: { exercise: ProgressExerciseDetail })
   const exerciseType = exercise.guideSnapshot?.type ?? "reps";
   const isCardio = exerciseType === "cardio";
   const isDuration = exerciseType === "duration";
+  const weightRelevant = exercise.guideSnapshot?.weightRelevant !== false;
 
   return (
     <article className="panel progress-exercise-detail">
@@ -520,39 +540,54 @@ function ExerciseDetailPanel({ exercise }: { exercise: ProgressExerciseDetail })
                   : `${exercise.bestWeightReps} seg`}
               </strong>
             </div>
-            <div>
-              <span>Mayor peso</span>
-              <strong>
-                {exercise.bestWeightKg === null || exercise.bestWeightKg === 0
-                  ? "B.W."
-                  : `${formatDecimalKg(exercise.bestWeightKg)} kg`}
-              </strong>
-            </div>
+            {weightRelevant && (
+              <div>
+                <span>Mayor peso</span>
+                <strong>
+                  {exercise.bestWeightKg === null || exercise.bestWeightKg === 0
+                    ? "B.W."
+                    : `${formatDecimalKg(exercise.bestWeightKg)} kg`}
+                </strong>
+              </div>
+            )}
           </>
         ) : (
           <>
-            <div>
-              <span>Mejor 1RM estimado</span>
-              <strong>
-                {exercise.bestEstimatedOneRepMax === null
-                  ? "-"
-                  : `${formatDecimalKg(exercise.bestEstimatedOneRepMax)} kg`}
-              </strong>
-            </div>
-            <div>
-              <span>Mejor peso</span>
-              <strong>
-                {exercise.bestWeightKg === null
-                  ? "-"
-                  : `${formatDecimalKg(exercise.bestWeightKg)} kg x ${
-                      exercise.bestWeightReps ?? "-"
-                    }`}
-              </strong>
-            </div>
-            <div>
-              <span>Volumen</span>
-              <strong>{formatKg(exercise.totalVolumeKg)} kg</strong>
-            </div>
+            {weightRelevant ? (
+              <>
+                <div>
+                  <span>Mejor 1RM estimado</span>
+                  <strong>
+                    {exercise.bestEstimatedOneRepMax === null
+                      ? "-"
+                      : `${formatDecimalKg(exercise.bestEstimatedOneRepMax)} kg`}
+                  </strong>
+                </div>
+                <div>
+                  <span>Mejor peso</span>
+                  <strong>
+                    {exercise.bestWeightKg === null
+                      ? "-"
+                      : `${formatDecimalKg(exercise.bestWeightKg)} kg x ${
+                          exercise.bestWeightReps ?? "-"
+                        }`}
+                  </strong>
+                </div>
+                <div>
+                  <span>Volumen</span>
+                  <strong>{formatKg(exercise.totalVolumeKg)} kg</strong>
+                </div>
+              </>
+            ) : (
+              <div>
+                <span>Mejor serie</span>
+                <strong>
+                  {exercise.bestWeightReps === null
+                    ? "-"
+                    : `${exercise.bestWeightReps} reps`}
+                </strong>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -588,12 +623,24 @@ function ExerciseDetailPanel({ exercise }: { exercise: ProgressExerciseDetail })
         </div>
       ) : null}
 
-      <SetHistory sets={exercise.recentSets} exerciseType={exerciseType} />
+      <SetHistory
+        sets={exercise.recentSets}
+        exerciseType={exerciseType}
+        weightRelevant={weightRelevant}
+      />
     </article>
   );
 }
 
-function SetHistory({ sets, exerciseType }: { sets: ProgressExerciseSet[]; exerciseType: ExerciseType }) {
+function SetHistory({
+  sets,
+  exerciseType,
+  weightRelevant,
+}: {
+  sets: ProgressExerciseSet[];
+  exerciseType: ExerciseType;
+  weightRelevant: boolean;
+}) {
   const isCardio = exerciseType === "cardio";
   const isDuration = exerciseType === "duration";
 
@@ -603,16 +650,40 @@ function SetHistory({ sets, exerciseType }: { sets: ProgressExerciseSet[]; exerc
       {sets.map((set) => {
         const text = (() => {
           if (isCardio) return `${formatDecimalKg(set.weightKg)} km x ${set.reps} min`;
-          if (isDuration) return `${set.weightKg > 0 ? `${formatDecimalKg(set.weightKg)} kg x ` : ""}${set.reps}s`;
-          return `${formatDecimalKg(set.weightKg)} kg x ${set.reps}`;
+          if (isDuration) {
+            if (weightRelevant) {
+              return `${set.weightKg > 0 ? `${formatDecimalKg(set.weightKg)} kg x ` : ""}${set.reps}s`;
+            }
+            return `${set.reps}s`;
+          }
+          if (weightRelevant) {
+            return `${formatDecimalKg(set.weightKg)} kg x ${set.reps}`;
+          }
+          return `${set.reps} reps`;
         })();
 
         return (
           <div className="progress-set-row" key={set.setLogId}>
             <span>{formatCompactDate(set.completedAt)}</span>
             <strong>{text}</strong>
-            <span>{isCardio || isDuration ? "" : (set.rir === null ? "RIR -" : `RIR ${set.rir}`)}</span>
-            <span>{isCardio || isDuration ? "" : (set.isPr ? "PR" : `${formatKg(set.volumeKg)} kg`)}</span>
+            <span>
+              {isCardio || isDuration || !weightRelevant
+                ? ""
+                : set.rir === null
+                ? "RIR -"
+                : `RIR ${set.rir}`}
+            </span>
+            <span>
+              {isCardio || isDuration
+                ? ""
+                : weightRelevant
+                ? set.isPr
+                  ? "PR"
+                  : `${formatKg(set.volumeKg)} kg`
+                : set.isPr
+                ? "PR"
+                : ""}
+            </span>
           </div>
         );
       })}
