@@ -4034,17 +4034,8 @@ li {
 }
 
 /* Base outline style for the silhouettes */
-.body-outline-group .body-part-solid {
-  fill: url(#mannequin-grad-inactive);
-  stroke: var(--border-strong);
-  stroke-width: 0.8;
-}
-
-.body-outline-group .body-part-line {
-  fill: none;
-  stroke: var(--border-strong);
-  stroke-width: 2.2;
-  stroke-linecap: round;
+.body-mannequin-image {
+  opacity: 0.85;
 }
 
 .body-outline-group text {
@@ -4057,41 +4048,44 @@ li {
 
 /* Individual muscle region path styling */
 .body-region {
-  fill: url(#mannequin-grad-inactive);
-  stroke: #0d0d0d;
-  stroke-width: 0.8;
-  stroke-linejoin: round;
+  fill: transparent;
+  stroke: none;
   transition: fill 0.25s ease, opacity 0.25s ease;
+  pointer-events: none;
 }
 
 /* When a region is active (primary/secondary/heat) */
 .body-region[data-state="primary"] {
   fill: url(#mannequin-grad-primary);
   filter: url(#neon-glow);
-  stroke: rgba(96, 165, 250, 0.4);
-  stroke-width: 1;
-  opacity: 1 !important;
+  stroke: rgba(96, 165, 250, 0.5);
+  stroke-width: 0.8;
+  opacity: 0.6 !important;
+  mix-blend-mode: screen;
 }
 
 .body-region[data-state="secondary"] {
   fill: url(#mannequin-grad-secondary);
   filter: url(#neon-glow);
-  stroke: rgba(125, 211, 252, 0.4);
-  stroke-width: 1;
-  opacity: 1 !important;
+  stroke: rgba(125, 211, 252, 0.5);
+  stroke-width: 0.8;
+  opacity: 0.6 !important;
+  mix-blend-mode: screen;
 }
 
 .body-region[data-state="heat"] {
   fill: url(#mannequin-grad-heat);
   filter: url(#neon-glow);
-  stroke: rgba(251, 191, 36, 0.4);
-  stroke-width: 1;
-  opacity: 1 !important;
+  stroke: rgba(251, 191, 36, 0.5);
+  stroke-width: 0.8;
+  opacity: 0.6 !important;
+  mix-blend-mode: screen;
 }
 
 .body-region[data-state="inactive"] {
-  fill: url(#mannequin-grad-inactive);
-  opacity: 0.65;
+  fill: transparent;
+  opacity: 0 !important;
+  stroke: none;
 }
 
 /* Muscle chip layout */
