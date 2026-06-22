@@ -30,6 +30,7 @@ export type Exercise = {
   archivedAt: IsoUtcString | null;
   createdAt: IsoUtcString;
   updatedAt: IsoUtcString;
+  weightRelevant?: boolean;
 };
 
 export type Routine = {
@@ -83,7 +84,7 @@ export type RoutineRevision = {
 
 export type ExerciseGuideSnapshot = Pick<
   Exercise,
-  "id" | "name" | "equipmentDetail" | "guide" | "type"
+  "id" | "name" | "equipmentDetail" | "guide" | "type" | "weightRelevant"
 > & {
   primaryMuscles?: string[];
   secondaryMuscles?: string[];
