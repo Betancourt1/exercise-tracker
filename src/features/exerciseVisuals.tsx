@@ -384,21 +384,39 @@ export function ExerciseVideoSnippet({
 }
 
 function BodyOutline({ offsetX, label }: { offsetX: number; label: string }) {
-  const isFront = label === "Frente";
   return (
     <g aria-hidden="true" className="body-outline-group">
       <text x={offsetX + 55} y="232" textAnchor="middle">
         {label}
       </text>
-      {/* 3D realistic mannequin render background */}
-      <image
-        href={isFront ? "/images/body-front-v2.png" : "/images/body-back-v2.png"}
-        x={offsetX + 1}
-        y={3}
-        width={108}
-        height={224}
-        preserveAspectRatio="none"
-        className="body-mannequin-image"
+      <circle cx={offsetX + 55} cy="22" r="12" className="body-part-solid" />
+      <path
+        d={`M${offsetX + 49} 35 H${offsetX + 61} L${offsetX + 64} 49 H${offsetX + 46} Z`}
+        className="body-part-solid"
+      />
+      <path
+        d={`M${offsetX + 34} 52 C${offsetX + 42} 43 ${offsetX + 68} 43 ${
+          offsetX + 76
+        } 52 L${offsetX + 70} 126 C${offsetX + 63} 133 ${offsetX + 47} 133 ${
+          offsetX + 40
+        } 126 Z`}
+        className="body-part-solid"
+      />
+      <path
+        d={`M${offsetX + 31} 62 C${offsetX + 20} 86 ${offsetX + 21} 118 ${offsetX + 30} 140`}
+        className="body-part-arm"
+      />
+      <path
+        d={`M${offsetX + 79} 62 C${offsetX + 90} 86 ${offsetX + 89} 118 ${offsetX + 80} 140`}
+        className="body-part-arm"
+      />
+      <path
+        d={`M${offsetX + 43} 127 L${offsetX + 36} 224`}
+        className="body-part-leg"
+      />
+      <path
+        d={`M${offsetX + 67} 127 L${offsetX + 74} 224`}
+        className="body-part-leg"
       />
     </g>
   );
