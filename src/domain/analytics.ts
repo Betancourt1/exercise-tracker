@@ -313,16 +313,39 @@ function buildProgressExerciseDetails(
 
         return best === null ? estimatedOneRepMax : Math.max(best, estimatedOneRepMax);
       }, null);
+      const exercise = exerciseById.get(exerciseId);
+      const isWeightRelevant = exercise?.weightRelevant !== false;
+
       const bestWeightSet = sortedSets.reduce<
-        { weightKg: number; reps: number; completedAt: string } | null
+        { weightKg: number | null; reps: number; completedAt: string } | null
       >((best, entry) => {
         const { weightKg, reps } = entry.setLog;
+
+        if (!isWeightRelevant) {
+          if (!isFiniteNumber(reps)) {
+            return best;
+          }
+          if (
+            !best ||
+            reps > best.reps ||
+            (reps === best.reps && entry.completedAt > best.completedAt)
+          ) {
+            return {
+              weightKg: null,
+              reps,
+              completedAt: entry.completedAt,
+            };
+          }
+          return best;
+        }
+
         if (!isFiniteNumber(weightKg) || !isFiniteNumber(reps)) {
           return best;
         }
 
         if (
           !best ||
+          best.weightKg === null ||
           weightKg > best.weightKg ||
           (weightKg === best.weightKg && reps > best.reps) ||
           (weightKg === best.weightKg &&
