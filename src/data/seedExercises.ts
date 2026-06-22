@@ -9,6 +9,7 @@ type SeedExerciseInput = Pick<
   "name" | "primaryMuscles" | "secondaryMuscles" | "equipment" | "tags" | "guide"
 > & {
   type?: ExerciseType;
+  weightRelevant?: boolean;
 };
 
 const equipmentDetailsByExerciseName: Record<string, string> = {
@@ -149,6 +150,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
     secondaryMuscles: ["core"],
     equipment: ["peso corporal"],
     tags: ["sentadilla", "pierna", "principiante", "sin máquinas"],
+    weightRelevant: false,
     guide: {
       setup: ["Pies al ancho de hombros.", "Mantén el torso estable."],
       technique: ["Baja con control hasta un rango cómodo.", "Sube empujando el piso."],
@@ -441,6 +443,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
     secondaryMuscles: ["hombros", "glúteos"],
     equipment: ["peso corporal"],
     tags: ["core", "sin máquinas", "estabilidad"],
+    weightRelevant: false,
     guide: {
       setup: ["Apoya antebrazos bajo hombros.", "Forma una línea de cabeza a talones."],
       technique: ["Mantén abdomen y glúteos activos.", "Respira sin perder posición."],
@@ -453,6 +456,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
     secondaryMuscles: ["flexores de cadera"],
     equipment: ["peso corporal"],
     tags: ["core", "principiante", "control"],
+    weightRelevant: false,
     guide: {
       setup: ["Acuéstate boca arriba con brazos arriba.", "Eleva rodillas a 90 grados."],
       technique: [
@@ -611,6 +615,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
     secondaryMuscles: ["glúteos", "hombros"],
     equipment: ["peso corporal"],
     tags: ["core", "estabilidad", "sin máquinas", "principiante"],
+    weightRelevant: false,
     guide: {
       setup: [
         "Apoya antebrazo bajo hombro y alinea el cuerpo.",
@@ -774,6 +779,7 @@ const seedExerciseInputs: SeedExerciseInput[] = [
     secondaryMuscles: ["glúteos", "espalda baja"],
     equipment: ["peso corporal"],
     tags: ["core", "estabilidad", "principiante", "sin máquinas"],
+    weightRelevant: false,
     guide: {
       setup: ["Colócate en cuatro puntos.", "Mantén manos bajo hombros y rodillas bajo cadera."],
       technique: ["Extiende brazo y pierna contraria.", "Regresa lento sin girar el torso."],
@@ -812,6 +818,7 @@ export function createSeedExercises(now = toIsoUtc()): Exercise[] {
     id: createSeedExerciseId(exercise.name),
     nameNormalized: normalizeExerciseName(exercise.name),
     type: exercise.type || "reps",
+    weightRelevant: exercise.weightRelevant ?? true,
     equipmentDetail:
       equipmentDetailsByExerciseName[exercise.name] ?? exercise.equipment.join(", "),
     isCustom: false,
@@ -850,6 +857,7 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
           {
             ...existingExercise,
             type: seedExercise.type,
+            weightRelevant: seedExercise.weightRelevant,
             primaryMuscles: seedExercise.primaryMuscles,
             secondaryMuscles: seedExercise.secondaryMuscles,
             equipment: seedExercise.equipment,
@@ -902,6 +910,7 @@ function hasSeedExerciseMetadataChanges(
 ): boolean {
   return (
     existingExercise.type !== seedExercise.type ||
+    existingExercise.weightRelevant !== seedExercise.weightRelevant ||
     existingExercise.equipmentDetail !== seedExercise.equipmentDetail ||
     !areStringArraysEqual(existingExercise.primaryMuscles, seedExercise.primaryMuscles) ||
     !areStringArraysEqual(existingExercise.secondaryMuscles, seedExercise.secondaryMuscles) ||
