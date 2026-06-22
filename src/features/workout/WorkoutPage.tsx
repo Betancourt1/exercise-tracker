@@ -486,7 +486,7 @@ export function WorkoutPage({
       {/* Finish confirm */}
       {showFinishConfirm && (
         <div className="dialog-backdrop" role="presentation">
-          <div className="dialog-card confirm-card" role="dialog" aria-modal="true">
+          <div className="dialog-card" role="dialog" aria-modal="true">
             <div className="dialog-header">
               <div>
                 <p className="panel-label">Finalizar sesión</p>
