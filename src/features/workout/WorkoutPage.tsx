@@ -624,6 +624,7 @@ function WorkoutExerciseCard({
 
   const restSeconds = group.targetSnapshot?.restSeconds ?? 60;
   const exerciseType = group.guideSnapshot?.type ?? "reps";
+  const weightRelevant = group.guideSnapshot?.weightRelevant !== false;
   const isCardio = exerciseType === "cardio";
   const isDuration = exerciseType === "duration";
 
@@ -697,15 +698,10 @@ function WorkoutExerciseCard({
                 <th>KM</th>
                 <th>TIEMPO</th>
               </>
-            ) : isDuration ? (
-              <>
-                <th>KG</th>
-                <th>SEG</th>
-              </>
             ) : (
               <>
-                <th>KG</th>
-                <th>REPS</th>
+                {weightRelevant && <th>KG</th>}
+                {isDuration ? <th>SEG</th> : <th>REPS</th>}
               </>
             )}
             <th>✓</th>
@@ -718,6 +714,7 @@ function WorkoutExerciseCard({
               setLog={setLog}
               setNumber={index + 1}
               exerciseType={exerciseType}
+              weightRelevant={weightRelevant}
               onUpdate={onUpdateSetLog}
             />
           ))}
@@ -739,17 +736,26 @@ function WorkoutSetRow({
   setLog,
   setNumber,
   exerciseType,
+  weightRelevant,
   onUpdate,
 }: {
   setLog: SetLog;
   setNumber: number;
   exerciseType: ExerciseType;
+  weightRelevant: boolean;
   onUpdate: (setLogId: string, updates: Partial<SetLog>) => void;
 }) {
   const isCardio = exerciseType === "cardio";
   const isDuration = exerciseType === "duration";
 
   const previousText = (() => {
+    if (!weightRelevant) {
+      if (setLog.reps != null) {
+        if (isDuration) return `${setLog.reps}s`;
+        return `${setLog.reps} reps`;
+      }
+      return "—";
+    }
     if (setLog.weightKg != null && setLog.reps != null) {
       if (isCardio) return `${setLog.weightKg}km×${setLog.reps}m`;
       if (isDuration) return `${setLog.weightKg > 0 ? `${setLog.weightKg}kg×` : ""}${setLog.reps}s`;
@@ -769,34 +775,71 @@ function WorkoutSetRow({
       <td>
         <span className="set-previous">{previousText}</span>
       </td>
-      <td>
-        <input
-          className="set-number-input"
-          type="number"
-          min={0}
-          step={isCardio ? 0.1 : 0.5}
-          placeholder={isCardio ? "km" : "kg"}
-          value={setLog.weightKg ?? ""}
-          onChange={(e) => {
-            const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
-            onUpdate(setLog.id, { weightKg: v });
-          }}
-        />
-      </td>
-      <td>
-        <input
-          className="set-number-input"
-          type="number"
-          min={0}
-          step={1}
-          placeholder={isCardio ? "min" : isDuration ? "seg" : "reps"}
-          value={setLog.reps ?? ""}
-          onChange={(e) => {
-            const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
-            onUpdate(setLog.id, { reps: v });
-          }}
-        />
-      </td>
+      {isCardio ? (
+        <>
+          <td>
+            <input
+              className="set-number-input"
+              type="number"
+              min={0}
+              step={0.1}
+              placeholder="km"
+              value={setLog.weightKg ?? ""}
+              onChange={(e) => {
+                const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                onUpdate(setLog.id, { weightKg: v });
+              }}
+            />
+          </td>
+          <td>
+            <input
+              className="set-number-input"
+              type="number"
+              min={0}
+              step={1}
+              placeholder="min"
+              value={setLog.reps ?? ""}
+              onChange={(e) => {
+                const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                onUpdate(setLog.id, { reps: v });
+              }}
+            />
+          </td>
+        </>
+      ) : (
+        <>
+          {weightRelevant && (
+            <td>
+              <input
+                className="set-number-input"
+                type="number"
+                min={0}
+                step={0.5}
+                placeholder="kg"
+                value={setLog.weightKg ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                  onUpdate(setLog.id, { weightKg: v });
+                }}
+              />
+            </td>
+          )}
+          <td>
+            <input
+              className="set-number-input"
+              type="number"
+              min={0}
+              step={1}
+              placeholder={isDuration ? "seg" : "reps"}
+              value={setLog.reps ?? ""}
+              onChange={(e) => {
+                const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                onUpdate(setLog.id, { reps: v });
+              }}
+            />
+          </td>
+        </>
+      )}
       <td>
         <button
           className={`set-check-btn${setLog.completed ? " checked" : ""}`}
@@ -1040,11 +1083,14 @@ function WorkoutEmptyView({
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function isValidCompletedSeries(setLog: SetLog): boolean {
+  const isWeightRelevant = setLog.guideSnapshot?.weightRelevant !== false;
+  const isWeightValid = isWeightRelevant
+    ? typeof setLog.weightKg === "number" && Number.isFinite(setLog.weightKg) && setLog.weightKg >= 0
+    : true;
+
   return (
     setLog.completed &&
-    typeof setLog.weightKg === "number" &&
-    Number.isFinite(setLog.weightKg) &&
-    setLog.weightKg >= 0 &&
+    isWeightValid &&
     typeof setLog.reps === "number" &&
     Number.isFinite(setLog.reps) &&
     setLog.reps > 0
