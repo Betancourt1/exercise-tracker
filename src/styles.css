@@ -410,7 +410,7 @@ li {
   align-items: center;
   gap: 7px;
   padding: 9px 18px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 700;
   background: var(--accent);
@@ -435,6 +435,17 @@ li {
   background: var(--accent);
 }
 
+.primary-button:disabled,
+.primary-button.training:disabled,
+.primary-button.routine:disabled {
+  background: var(--surface-raised) !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none !important;
+}
+
 .secondary-button {
   display: inline-flex;
   align-items: center;
@@ -454,6 +465,14 @@ li {
   background: var(--surface-hover);
 }
 
+.secondary-button:disabled {
+  background: var(--surface) !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .danger-button {
   display: inline-flex;
   align-items: center;
@@ -469,6 +488,14 @@ li {
 
 .danger-button:hover:not(:disabled) {
   background: #dc2626;
+}
+
+.danger-button:disabled {
+  background: var(--surface-raised) !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .icon-button {
@@ -569,6 +596,9 @@ li {
   background: var(--danger-soft);
   border-radius: var(--radius-sm);
   border: 1px solid rgba(239, 68, 68, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* =====================================================
@@ -1355,7 +1385,7 @@ li {
 
 .workout-finish-btn {
   padding: 7px 16px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   background: var(--accent);
   color: #fff;
   font-size: 0.875rem;
@@ -1365,6 +1395,14 @@ li {
 
 .workout-finish-btn:hover:not(:disabled) {
   background: var(--accent-hover);
+}
+
+.workout-finish-btn:disabled {
+  background: var(--surface-raised) !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .workout-metrics-strip {

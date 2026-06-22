@@ -8,6 +8,7 @@ import {
   Plus,
   Save,
   Timer,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -505,9 +506,10 @@ export function WorkoutPage({
               {Math.round(totalVolumeKg)} kg de volumen total.
             </p>
             {!hasValidCompletedSeries && (
-              <p className="form-error">
-                Completa al menos una serie con kg y repeticiones válidas.
-              </p>
+              <div className="form-error">
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>Completa al menos una serie con kg y repeticiones válidas.</span>
+              </div>
             )}
             <div className="dialog-actions">
               <button
@@ -516,7 +518,7 @@ export function WorkoutPage({
                 onClick={() => setShowDiscardConfirm(true)}
                 style={{ marginRight: "auto" }}
               >
-                <X size={15} />
+                <Trash2 size={15} />
                 Descartar
               </button>
               <button
