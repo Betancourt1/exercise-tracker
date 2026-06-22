@@ -393,11 +393,11 @@ function BodyOutline({ offsetX, label }: { offsetX: number; label: string }) {
       {/* 3D realistic mannequin render background */}
       <image
         href={isFront ? "/images/body-front.png" : "/images/body-back.png"}
-        x={offsetX + 8}
-        y={5}
-        width={94}
-        height={215}
-        preserveAspectRatio="xMidYMid slice"
+        x={offsetX + 1}
+        y={3}
+        width={108}
+        height={224}
+        preserveAspectRatio="none"
         className="body-mannequin-image"
       />
     </g>
