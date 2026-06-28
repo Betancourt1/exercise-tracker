@@ -161,6 +161,9 @@ function validateExercises(records: Exercise[]): string | null {
     ) {
       return "equipmentDetail debe ser string";
     }
+    if (record.media !== undefined && !isExerciseMedia(record.media)) {
+      return "media debe ser válido";
+    }
     if (!isStringArray(record.tags)) return "requiere tags";
     if (!isGuide(record.guide)) return "requiere guide válido";
     if (typeof record.isCustom !== "boolean") return "requiere isCustom";
@@ -504,6 +507,21 @@ function isTargetSnapshot(value: unknown): boolean {
     (value.targetWeightKg === undefined ||
       value.targetWeightKg === null ||
       (isFiniteNumber(value.targetWeightKg) && value.targetWeightKg >= 0))
+  );
+}
+
+function isExerciseMedia(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value.source === "hasaneyldrm/exercises-dataset" &&
+    isNonEmptyString(value.sourceExerciseId) &&
+    isNonEmptyString(value.sourceExerciseName) &&
+    isNonEmptyString(value.sourceUrl) &&
+    isNonEmptyString(value.imageUrl) &&
+    isNonEmptyString(value.animationUrl)
   );
 }
 

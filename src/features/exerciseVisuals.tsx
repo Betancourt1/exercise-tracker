@@ -1,5 +1,5 @@
 import { ExternalLink, Video } from "lucide-react";
-import type { ExerciseGuide } from "../domain";
+import type { ExerciseGuide, ExerciseMedia } from "../domain";
 
 type ExerciseVisualSource = {
   name: string;
@@ -7,6 +7,7 @@ type ExerciseVisualSource = {
   secondaryMuscles?: string[];
   tags?: string[];
   guide: ExerciseGuide;
+  media?: ExerciseMedia;
 };
 
 type MuscleIntensity = {
@@ -357,28 +358,72 @@ export function ExerciseVideoSnippet({
 }) {
   const query = buildYoutubeQuery(exercise.name);
   const searchUrl = buildYoutubeSearchUrl(query);
+  const media = exercise.media;
 
   return (
     <div className="exercise-video-snippet" data-compact={compact}>
       <div className="visual-section-header">
         <strong>Cómo hacerlo</strong>
-        <span>YouTube</span>
+        <span>{media ? "Imagen y animación" : "YouTube"}</span>
       </div>
-      <a className="youtube-snippet-card" href={searchUrl} rel="noreferrer" target="_blank">
-        <span className="youtube-snippet-thumb" aria-hidden="true">
-          <Video size={24} strokeWidth={2.2} />
-          <span>Video</span>
-        </span>
-        <span className="youtube-snippet-copy">
-          <strong>{exercise.name}</strong>
-          <small>Buscar técnica y ejecución en YouTube</small>
-        </span>
-        <ExternalLink size={15} aria-hidden="true" />
+      {media ? (
+        <ExerciseDatasetMedia exerciseName={exercise.name} media={media} />
+      ) : (
+        <>
+          <a className="youtube-snippet-card" href={searchUrl} rel="noreferrer" target="_blank">
+            <span className="youtube-snippet-thumb" aria-hidden="true">
+              <Video size={24} strokeWidth={2.2} />
+              <span>Video</span>
+            </span>
+            <span className="youtube-snippet-copy">
+              <strong>{exercise.name}</strong>
+              <small>Buscar técnica y ejecución en YouTube</small>
+            </span>
+            <ExternalLink size={15} aria-hidden="true" />
+          </a>
+          <p className="youtube-snippet-note">
+            Elige videos que coincidan con tu equipo y mantén cargas conservadoras si estás
+            aprendiendo el movimiento.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ExerciseDatasetMedia({
+  exerciseName,
+  media,
+}: {
+  exerciseName: string;
+  media: ExerciseMedia;
+}) {
+  return (
+    <div className="dataset-media-card">
+      <div
+        className="dataset-media-frame"
+        style={{ backgroundImage: `url(${media.imageUrl})` }}
+      >
+        <img
+          src={media.animationUrl}
+          alt={`Animación de ${exerciseName}`}
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      <div className="dataset-media-copy">
+        <strong>{exerciseName}</strong>
+        <small>Referencia visual: {media.sourceExerciseName}</small>
+      </div>
+      <a
+        className="dataset-media-source"
+        href={media.sourceUrl}
+        rel="noreferrer"
+        target="_blank"
+      >
+        Fuente
+        <ExternalLink size={13} aria-hidden="true" />
       </a>
-      <p className="youtube-snippet-note">
-        Elige videos que coincidan con tu equipo y mantén cargas conservadoras si estás
-        aprendiendo el movimiento.
-      </p>
     </div>
   );
 }

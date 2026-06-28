@@ -1,4 +1,4 @@
-import type { Exercise, ExerciseType } from "../domain/types";
+import type { Exercise, ExerciseMedia, ExerciseType } from "../domain/types";
 import { normalizeExerciseName, toIsoUtc } from "../domain/utils";
 import { appDb, type WorkoutDatabase } from "./db";
 
@@ -10,6 +10,318 @@ type SeedExerciseInput = Pick<
 > & {
   type?: ExerciseType;
   weightRelevant?: boolean;
+};
+
+type DatasetMediaInput = Pick<ExerciseMedia, "sourceExerciseId" | "sourceExerciseName"> & {
+  imagePath: string;
+  animationPath: string;
+};
+
+const EXERCISES_DATASET_COMMIT = "cb611259f71f9dedaf908254d56d6e1fb0576054";
+const EXERCISES_DATASET_ASSET_BASE_URL = `https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/${EXERCISES_DATASET_COMMIT}`;
+const EXERCISES_DATASET_SOURCE_URL = `https://github.com/hasaneyldrm/exercises-dataset/tree/${EXERCISES_DATASET_COMMIT}`;
+
+const datasetMediaByExerciseName: Record<string, DatasetMediaInput> = {
+  Sentadilla: datasetMedia(
+    "0043",
+    "barbell full squat",
+    "images/0043-qXTaZnJ.jpg",
+    "videos/0043-qXTaZnJ.gif",
+  ),
+  "Press banca": datasetMedia(
+    "0025",
+    "barbell bench press",
+    "images/0025-EIeI8Vf.jpg",
+    "videos/0025-EIeI8Vf.gif",
+  ),
+  "Remo con barra": datasetMedia(
+    "0027",
+    "barbell bent over row",
+    "images/0027-eZyBC3j.jpg",
+    "videos/0027-eZyBC3j.gif",
+  ),
+  "Peso muerto rumano": datasetMedia(
+    "0085",
+    "barbell romanian deadlift",
+    "images/0085-wQ2c4XD.jpg",
+    "videos/0085-wQ2c4XD.gif",
+  ),
+  Zancadas: datasetMedia(
+    "0336",
+    "dumbbell lunge",
+    "images/0336-RRWFUcw.jpg",
+    "videos/0336-RRWFUcw.gif",
+  ),
+  "Press militar": datasetMedia(
+    "1457",
+    "barbell standing wide military press",
+    "images/1457-Kyd9Rz5.jpg",
+    "videos/1457-Kyd9Rz5.gif",
+  ),
+  "Sentadilla goblet": datasetMedia(
+    "1760",
+    "dumbbell goblet squat",
+    "images/1760-yn8yg1r.jpg",
+    "videos/1760-yn8yg1r.gif",
+  ),
+  "Step-up": datasetMedia(
+    "0431",
+    "dumbbell step-up",
+    "images/0431-aXtJhlg.jpg",
+    "videos/0431-aXtJhlg.gif",
+  ),
+  "Prensa de pierna": datasetMedia(
+    "1463",
+    "sled 45° leg press (side pov)",
+    "images/1463-2Qh2J1e.jpg",
+    "videos/1463-2Qh2J1e.gif",
+  ),
+  "Curl femoral en máquina": datasetMedia(
+    "0599",
+    "lever seated leg curl",
+    "images/0599-Zg3XY7P.jpg",
+    "videos/0599-Zg3XY7P.gif",
+  ),
+  "Extensión de piernas": datasetMedia(
+    "0585",
+    "lever leg extension",
+    "images/0585-my33uHU.jpg",
+    "videos/0585-my33uHU.gif",
+  ),
+  "Hip thrust": datasetMedia(
+    "3562",
+    "barbell glute bridge two legs on bench (male)",
+    "images/3562-qg2PGl6.jpg",
+    "videos/3562-qg2PGl6.gif",
+  ),
+  "Puente de glúteos": datasetMedia(
+    "3013",
+    "low glute bridge on floor",
+    "images/3013-u0cNiij.jpg",
+    "videos/3013-u0cNiij.gif",
+  ),
+  "Elevación de pantorrillas": datasetMedia(
+    "0417",
+    "dumbbell standing calf raise",
+    "images/0417-dPmaUaU.jpg",
+    "videos/0417-dPmaUaU.gif",
+  ),
+  Flexiones: datasetMedia(
+    "0662",
+    "push-up",
+    "images/0662-I4hDWkc.jpg",
+    "videos/0662-I4hDWkc.gif",
+  ),
+  "Press inclinado con mancuernas": datasetMedia(
+    "0314",
+    "dumbbell incline bench press",
+    "images/0314-ns0SIbU.jpg",
+    "videos/0314-ns0SIbU.gif",
+  ),
+  "Aperturas con mancuernas": datasetMedia(
+    "0308",
+    "dumbbell fly",
+    "images/0308-yz9nUhF.jpg",
+    "videos/0308-yz9nUhF.gif",
+  ),
+  "Jalón al pecho": datasetMedia(
+    "2330",
+    "cable lat pulldown full range of motion",
+    "images/2330-LEprlgG.jpg",
+    "videos/2330-LEprlgG.gif",
+  ),
+  "Dominadas asistidas": datasetMedia(
+    "0017",
+    "assisted pull-up",
+    "images/0017-kiJ4Z2K.jpg",
+    "videos/0017-kiJ4Z2K.gif",
+  ),
+  "Remo con mancuerna": datasetMedia(
+    "0293",
+    "dumbbell bent over row",
+    "images/0293-BJ0Hz5L.jpg",
+    "videos/0293-BJ0Hz5L.gif",
+  ),
+  "Remo invertido": datasetMedia(
+    "0499",
+    "inverted row",
+    "images/0499-bZGHsAZ.jpg",
+    "videos/0499-bZGHsAZ.gif",
+  ),
+  "Remo sentado en polea": datasetMedia(
+    "0861",
+    "cable seated row",
+    "images/0861-fUBheHs.jpg",
+    "videos/0861-fUBheHs.gif",
+  ),
+  "Elevaciones laterales": datasetMedia(
+    "0334",
+    "dumbbell lateral raise",
+    "images/0334-DsgkuIt.jpg",
+    "videos/0334-DsgkuIt.gif",
+  ),
+  "Curl de bíceps": datasetMedia(
+    "0294",
+    "dumbbell biceps curl",
+    "images/0294-NbVPDMW.jpg",
+    "videos/0294-NbVPDMW.gif",
+  ),
+  "Extensión de tríceps en polea": datasetMedia(
+    "0241",
+    "cable triceps pushdown (v-bar)",
+    "images/0241-gAwDzB3.jpg",
+    "videos/0241-gAwDzB3.gif",
+  ),
+  "Fondos en banco": datasetMedia(
+    "0129",
+    "bench dip (knees bent)",
+    "images/0129-RrLske5.jpg",
+    "videos/0129-RrLske5.gif",
+  ),
+  "Dead bug": datasetMedia(
+    "0276",
+    "dead bug",
+    "images/0276-iny3m5y.jpg",
+    "videos/0276-iny3m5y.gif",
+  ),
+  "Pallof press": datasetMedia(
+    "0979",
+    "band horizontal pallof press",
+    "images/0979-9pa4H5m.jpg",
+    "videos/0979-9pa4H5m.gif",
+  ),
+  "Farmer carry": datasetMedia(
+    "2133",
+    "farmers walk",
+    "images/2133-qPEzJjA.jpg",
+    "videos/2133-qPEzJjA.gif",
+  ),
+  "Kettlebell swing": datasetMedia(
+    "0549",
+    "kettlebell swing",
+    "images/0549-UHJlbu3.jpg",
+    "videos/0549-UHJlbu3.gif",
+  ),
+  "Press de pecho en máquina": datasetMedia(
+    "0577",
+    "lever chest press",
+    "images/0577-T0yTjgW.jpg",
+    "videos/0577-T0yTjgW.gif",
+  ),
+  "Press con mancuernas en banca plana": datasetMedia(
+    "0289",
+    "dumbbell bench press",
+    "images/0289-SpYC0Kp.jpg",
+    "videos/0289-SpYC0Kp.gif",
+  ),
+  "Press de hombro en máquina": datasetMedia(
+    "0603",
+    "lever shoulder press",
+    "images/0603-67n3r98.jpg",
+    "videos/0603-67n3r98.gif",
+  ),
+  "Remo con banda": datasetMedia(
+    "0988",
+    "band one arm standing low row",
+    "images/0988-km0sQC0.jpg",
+    "videos/0988-km0sQC0.gif",
+  ),
+  "Split squat": datasetMedia(
+    "2368",
+    "split squats",
+    "images/2368-9E25EOx.jpg",
+    "videos/2368-9E25EOx.gif",
+  ),
+  "Plancha lateral": datasetMedia(
+    "3544",
+    "bodyweight incline side plank",
+    "images/3544-5VXmnV5.jpg",
+    "videos/3544-5VXmnV5.gif",
+  ),
+  "Crunch en polea": datasetMedia(
+    "0175",
+    "cable kneeling crunch",
+    "images/0175-WW95auq.jpg",
+    "videos/0175-WW95auq.gif",
+  ),
+  "Abducción de cadera en máquina": datasetMedia(
+    "0597",
+    "lever seated hip abduction",
+    "images/0597-CHpahtl.jpg",
+    "videos/0597-CHpahtl.gif",
+  ),
+  "Curl martillo": datasetMedia(
+    "0313",
+    "dumbbell hammer curl",
+    "images/0313-slDvUAU.jpg",
+    "videos/0313-slDvUAU.gif",
+  ),
+  "Sentadilla hack": datasetMedia(
+    "0743",
+    "sled hack squat",
+    "images/0743-Qa55kX1.jpg",
+    "videos/0743-Qa55kX1.gif",
+  ),
+  "Aducción de cadera en máquina": datasetMedia(
+    "0598",
+    "lever seated hip adduction",
+    "images/0598-oHsrypV.jpg",
+    "videos/0598-oHsrypV.gif",
+  ),
+  "Remo en máquina con pecho apoyado": datasetMedia(
+    "0581",
+    "lever high row",
+    "images/0581-nZZZy9m.jpg",
+    "videos/0581-nZZZy9m.gif",
+  ),
+  "Jalón con brazos rectos": datasetMedia(
+    "0238",
+    "cable straight arm pulldown",
+    "images/0238-x69MAlq.jpg",
+    "videos/0238-x69MAlq.gif",
+  ),
+  "Cruce de poleas": datasetMedia(
+    "0155",
+    "cable cross-over variation",
+    "images/0155-0CXGHya.jpg",
+    "videos/0155-0CXGHya.gif",
+  ),
+  "Patada de glúteo en polea": datasetMedia(
+    "0228",
+    "cable standing hip extension",
+    "images/0228-Kpajagk.jpg",
+    "videos/0228-Kpajagk.gif",
+  ),
+  "Aperturas inversas con mancuernas": datasetMedia(
+    "0383",
+    "dumbbell reverse fly",
+    "images/0383-EAs3xL9.jpg",
+    "videos/0383-EAs3xL9.gif",
+  ),
+  "Peso muerto a una pierna con mancuerna": datasetMedia(
+    "1757",
+    "dumbbell single leg deadlift",
+    "images/1757-gKozT8X.jpg",
+    "videos/1757-gKozT8X.gif",
+  ),
+  "Pullover con mancuerna": datasetMedia(
+    "0375",
+    "dumbbell pullover",
+    "images/0375-9XjtHvS.jpg",
+    "videos/0375-9XjtHvS.gif",
+  ),
+  "Elevación de piernas colgado": datasetMedia(
+    "0472",
+    "hanging leg raise",
+    "images/0472-I3tsCnC.jpg",
+    "videos/0472-I3tsCnC.gif",
+  ),
+  "Extensión de espalda en banco": datasetMedia(
+    "0488",
+    "hyperextension (on bench)",
+    "images/0488-zkgRrbK.jpg",
+    "videos/0488-zkgRrbK.gif",
+  ),
 };
 
 const equipmentDetailsByExerciseName: Record<string, string> = {
@@ -821,6 +1133,7 @@ export function createSeedExercises(now = toIsoUtc()): Exercise[] {
     weightRelevant: exercise.weightRelevant ?? true,
     equipmentDetail:
       equipmentDetailsByExerciseName[exercise.name] ?? exercise.equipment.join(", "),
+    media: createExerciseMedia(exercise.name),
     isCustom: false,
     archivedAt: null,
     createdAt: now,
@@ -864,6 +1177,7 @@ export async function seedExerciseLibrary(db: WorkoutDatabase = appDb): Promise<
             equipmentDetail: seedExercise.equipmentDetail,
             tags: seedExercise.tags,
             guide: seedExercise.guide,
+            media: seedExercise.media,
             updatedAt: now,
           },
         ];
@@ -904,6 +1218,35 @@ function createSeedExerciseId(name: string): string {
   return `seed:exercise:${normalizeExerciseName(name).replace(/\s+/g, "-")}`;
 }
 
+function datasetMedia(
+  sourceExerciseId: string,
+  sourceExerciseName: string,
+  imagePath: string,
+  animationPath: string,
+): DatasetMediaInput {
+  return {
+    sourceExerciseId,
+    sourceExerciseName,
+    imagePath,
+    animationPath,
+  };
+}
+
+function createExerciseMedia(name: string): ExerciseMedia | undefined {
+  const media = datasetMediaByExerciseName[name];
+
+  if (!media) return undefined;
+
+  return {
+    source: "hasaneyldrm/exercises-dataset",
+    sourceExerciseId: media.sourceExerciseId,
+    sourceExerciseName: media.sourceExerciseName,
+    sourceUrl: EXERCISES_DATASET_SOURCE_URL,
+    imageUrl: `${EXERCISES_DATASET_ASSET_BASE_URL}/${media.imagePath}`,
+    animationUrl: `${EXERCISES_DATASET_ASSET_BASE_URL}/${media.animationPath}`,
+  };
+}
+
 function hasSeedExerciseMetadataChanges(
   existingExercise: Exercise,
   seedExercise: Exercise,
@@ -918,12 +1261,28 @@ function hasSeedExerciseMetadataChanges(
     !areStringArraysEqual(existingExercise.tags, seedExercise.tags) ||
     !areStringArraysEqual(existingExercise.guide.setup, seedExercise.guide.setup) ||
     !areStringArraysEqual(existingExercise.guide.technique, seedExercise.guide.technique) ||
-    !areStringArraysEqual(existingExercise.guide.commonMistakes, seedExercise.guide.commonMistakes)
+    !areStringArraysEqual(existingExercise.guide.commonMistakes, seedExercise.guide.commonMistakes) ||
+    !areExerciseMediaEqual(existingExercise.media, seedExercise.media)
   );
 }
 
 function areStringArraysEqual(first: string[], second: string[]): boolean {
   return first.length === second.length && first.every((item, index) => item === second[index]);
+}
+
+function areExerciseMediaEqual(first?: ExerciseMedia, second?: ExerciseMedia): boolean {
+  if (!first || !second) {
+    return first === second;
+  }
+
+  return (
+    first.source === second.source &&
+    first.sourceExerciseId === second.sourceExerciseId &&
+    first.sourceExerciseName === second.sourceExerciseName &&
+    first.sourceUrl === second.sourceUrl &&
+    first.imageUrl === second.imageUrl &&
+    first.animationUrl === second.animationUrl
+  );
 }
 
 function isConstraintError(error: unknown): boolean {

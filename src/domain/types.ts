@@ -13,6 +13,15 @@ export type ExerciseGuide = {
   commonMistakes: string[];
 };
 
+export type ExerciseMedia = {
+  source: "hasaneyldrm/exercises-dataset";
+  sourceExerciseId: string;
+  sourceExerciseName: string;
+  sourceUrl: string;
+  imageUrl: string;
+  animationUrl: string;
+};
+
 export type ExerciseType = "reps" | "duration" | "cardio";
 
 export type Exercise = {
@@ -26,6 +35,7 @@ export type Exercise = {
   equipmentDetail?: string;
   tags: string[];
   guide: ExerciseGuide;
+  media?: ExerciseMedia;
   isCustom: boolean;
   archivedAt: IsoUtcString | null;
   createdAt: IsoUtcString;
@@ -85,7 +95,7 @@ export type RoutineRevision = {
 
 export type ExerciseGuideSnapshot = Pick<
   Exercise,
-  "id" | "name" | "equipmentDetail" | "guide" | "type" | "weightRelevant"
+  "id" | "name" | "equipmentDetail" | "guide" | "type" | "weightRelevant" | "media"
 > & {
   primaryMuscles?: string[];
   secondaryMuscles?: string[];

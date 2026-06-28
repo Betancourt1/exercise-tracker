@@ -287,6 +287,8 @@ export function WorkoutPage({
           secondaryMuscles: exercise.secondaryMuscles,
           guide: exercise.guide,
           type: exercise.type,
+          weightRelevant: exercise.weightRelevant,
+          media: exercise.media,
         },
         setIndex: maxSetIndex + 1,
         weightKg: null,

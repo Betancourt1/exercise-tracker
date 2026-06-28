@@ -718,6 +718,7 @@ function ExerciseGuidePanel({
               primaryMuscles: exercise.primaryMuscles,
               secondaryMuscles: exercise.secondaryMuscles,
               guide: guideSnapshot.guide,
+              media: guideSnapshot.media,
             }}
             compact
           />

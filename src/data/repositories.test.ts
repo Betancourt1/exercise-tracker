@@ -755,6 +755,12 @@ describe("data repositories", () => {
           "Farmer carry",
         ]),
       );
+      expect(exercises.find((exercise) => exercise.name === "Press banca")?.media).toMatchObject({
+        source: "hasaneyldrm/exercises-dataset",
+        sourceExerciseId: "0025",
+        sourceExerciseName: "barbell bench press",
+      });
+      expect(exercises.find((exercise) => exercise.name === "Face pull")?.media).toBeUndefined();
       expect(exercises.every((exercise) => exercise.archivedAt === null)).toBe(true);
     } finally {
       db.close();

@@ -157,5 +157,6 @@ function createGuideSnapshot(exercise: Exercise): ExerciseGuideSnapshot {
     guide: exercise.guide,
     type: exercise.type,
     weightRelevant: exercise.weightRelevant,
+    media: exercise.media,
   };
 }
