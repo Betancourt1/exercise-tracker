@@ -20,23 +20,23 @@ describe("exercise library filters", () => {
     expect(
       filterExerciseLibrary(exercises, {
         ...baseFilters,
-        query: "jalon",
+        query: "pulldown",
       }).map((exercise) => exercise.name),
-    ).toContain("Jalón al pecho");
+    ).toContain("cable lat pulldown full range of motion");
 
     expect(
       filterExerciseLibrary(exercises, {
         ...baseFilters,
         query: "  MAQUINA pecho  ",
       }).map((exercise) => exercise.name),
-    ).toEqual(expect.arrayContaining(["Press de pecho en máquina"]));
+    ).toEqual(expect.arrayContaining(["lever chest press (0577)"]));
 
     expect(
       filterExerciseLibrary(exercises, {
         ...baseFilters,
-        query: "polea alta",
+        query: "polea core",
       }).map((exercise) => exercise.name),
-    ).toEqual(expect.arrayContaining(["Jalón al pecho", "Crunch en polea"]));
+    ).toEqual(expect.arrayContaining(["cable kneeling crunch"]));
   });
 
   it("combines query, muscle, equipment, and tag filters", () => {
@@ -44,14 +44,14 @@ describe("exercise library filters", () => {
     const results = filterExerciseLibrary(exercises, {
       query: "press",
       muscle: "pecho",
-      equipment: "mancuernas",
-      tag: "hipertrofia",
+      equipment: "mancuerna",
+      tag: "pecho",
     });
 
     expect(results.map((exercise) => exercise.name)).toEqual(
       expect.arrayContaining([
-        "Press inclinado con mancuernas",
-        "Press con mancuernas en banca plana",
+        "dumbbell incline bench press",
+        "dumbbell bench press",
       ]),
     );
     expect(
@@ -70,10 +70,10 @@ describe("exercise library filters", () => {
 
     expect(options.muscles).toEqual(expect.arrayContaining(["pecho", "core"]));
     expect(options.equipment).toEqual(
-      expect.arrayContaining(["banda", "máquina", "mancuernas"]),
+      expect.arrayContaining(["banda", "máquina", "mancuerna"]),
     );
     expect(options.tags).toEqual(
-      expect.arrayContaining(["principiante", "hipertrofia", "sin máquinas"]),
+      expect.arrayContaining(["pecho", "core", "mancuerna"]),
     );
     expect(options.muscles).toEqual(
       [...options.muscles].sort((a, b) => a.localeCompare(b, "es-MX")),

@@ -748,19 +748,19 @@ describe("data repositories", () => {
       expect(normalizedNames).toEqual([...normalizedNames].sort());
       expect(exerciseNames).toEqual(
         expect.arrayContaining([
-          "Sentadilla",
-          "Flexiones",
-          "Jalón al pecho",
-          "Plancha",
-          "Farmer carry",
+          "barbell full squat",
+          "push-up",
+          "cable lat pulldown full range of motion",
+          "front plank with twist",
+          "farmers walk",
         ]),
       );
-      expect(exercises.find((exercise) => exercise.name === "Press banca")?.media).toMatchObject({
+      expect(exercises.find((exercise) => exercise.name === "barbell bench press")?.media).toMatchObject({
         source: "hasaneyldrm/exercises-dataset",
         sourceExerciseId: "0025",
         sourceExerciseName: "barbell bench press",
       });
-      expect(exercises.find((exercise) => exercise.name === "Face pull")?.media).toBeUndefined();
+      expect(exercises.every((exercise) => exercise.media?.source === "hasaneyldrm/exercises-dataset")).toBe(true);
       expect(exercises.every((exercise) => exercise.archivedAt === null)).toBe(true);
     } finally {
       db.close();

@@ -616,41 +616,34 @@ function ExercisesPage() {
           {isLoading ? (
             <EmptyRows rows={4} labels={["Nombre", "Estación"]} />
           ) : filteredExercises.length > 0 ? (
-            <>
-              <div className="exercise-browser-table-head" aria-hidden="true">
-                <span>Ejercicio</span>
-                <span>Estación</span>
-              </div>
-              <div className="exercise-browser-list">
-                {filteredExercises.map((exercise) => {
-                  const equipmentDetail = formatExerciseEquipmentDetail(exercise);
-                  const exerciseMeta = [
-                    exercise.primaryMuscles.join(", "),
-                    exercise.tags.slice(0, 2).join(", "),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ");
+            <div className="exercise-browser-grid">
+              {filteredExercises.map((exercise, index) => {
+                const equipmentDetail = formatExerciseEquipmentDetail(exercise);
+                const exerciseMeta = [
+                  exercise.primaryMuscles.join(", "),
+                  exercise.equipment.join(", "),
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
 
-                  return (
-                    <button
-                      className="exercise-browser-row"
-                      data-active={exercise.id === selectedExercise?.id}
-                      type="button"
-                      key={exercise.id}
-                      onClick={() => setSelectedExerciseId(exercise.id)}
-                    >
-                      <span className="exercise-name-cell">
-                        <strong>{exercise.name}</strong>
-                        <small>{exerciseMeta}</small>
-                      </span>
-                      <span className="exercise-station-text" title={equipmentDetail}>
-                        {equipmentDetail}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
+                return (
+                  <button
+                    className="exercise-browser-card"
+                    data-active={exercise.id === selectedExercise?.id}
+                    type="button"
+                    key={exercise.id}
+                    onClick={() => setSelectedExerciseId(exercise.id)}
+                  >
+                    <ExerciseThumbnail exercise={exercise} priority={index < 8} />
+                    <span className="exercise-card-copy">
+                      <strong>{exercise.name}</strong>
+                      <small>{exerciseMeta}</small>
+                      <span title={equipmentDetail}>{equipmentDetail}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           ) : (
             <EmptyState
               title="Sin resultados"
@@ -708,20 +701,49 @@ function ExerciseGuideCard({ exercise }: { exercise: Exercise | null }) {
 
   return (
     <article className="guide-card">
-      <p className="panel-label">Guía</p>
-      <h2>{exercise.name}</h2>
-      <p className="muted">
-        {exercise.primaryMuscles.join(", ")}
-        {exercise.secondaryMuscles.length > 0
-          ? ` · ${exercise.secondaryMuscles.join(", ")}`
-          : ""}
-      </p>
-      <EquipmentDetailCallout exercise={exercise} />
       <ExerciseVisualPanel exercise={exercise} compact />
+      <div className="guide-card-heading">
+        <p className="panel-label">Guía</p>
+        <h2>{exercise.name}</h2>
+        <p className="muted">
+          {exercise.primaryMuscles.join(", ")}
+          {exercise.secondaryMuscles.length > 0
+            ? ` · ${exercise.secondaryMuscles.join(", ")}`
+            : ""}
+        </p>
+      </div>
+      <EquipmentDetailCallout exercise={exercise} />
       <GuideBlock title="Preparación" items={exercise.guide.setup} />
       <GuideBlock title="Técnica" items={exercise.guide.technique} />
       <GuideBlock title="Errores comunes" items={exercise.guide.commonMistakes} />
     </article>
+  );
+}
+
+function ExerciseThumbnail({
+  exercise,
+  priority = false,
+}: {
+  exercise: Exercise;
+  priority?: boolean;
+}) {
+  if (!exercise.media) {
+    return (
+      <span className="exercise-card-thumb exercise-card-thumb-empty" aria-hidden="true">
+        <Dumbbell size={24} />
+      </span>
+    );
+  }
+
+  return (
+    <span className="exercise-card-thumb">
+      <img
+        src={exercise.media.imageUrl}
+        alt={`Imagen de ${exercise.name}`}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+      />
+    </span>
   );
 }
 

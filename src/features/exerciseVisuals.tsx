@@ -83,13 +83,13 @@ export function ExerciseVisualPanel({
 }) {
   return (
     <div className="exercise-visuals" data-compact={compact}>
+      <ExerciseVideoSnippet exercise={exercise} compact={compact} />
       <BodyMuscleMap
         title="Músculos"
         primaryMuscles={exercise.primaryMuscles ?? []}
         secondaryMuscles={exercise.secondaryMuscles ?? []}
         compact={compact}
       />
-      <ExerciseVideoSnippet exercise={exercise} compact={compact} />
     </div>
   );
 }
