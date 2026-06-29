@@ -121,6 +121,9 @@ export function BodyMuscleMap({
     sortedIntensities.length > 0
       ? buildIntensityZones(sortedIntensities)
       : buildExerciseZones(primaryLabels, secondaryLabels);
+  const visibleZoneSummaries = zoneSummaries.some((zone) => zone.score > 0)
+    ? zoneSummaries.filter((zone) => zone.score > 0)
+    : zoneSummaries;
   const ariaLabel =
     activeMuscles.length > 0
       ? `${title}: ${dedupeLabels(activeMuscles).join(", ")}`
@@ -138,7 +141,7 @@ export function BodyMuscleMap({
         <span>{sortedIntensities.length > 0 ? "Carga reciente" : "Foco del movimiento"}</span>
       </div>
       <div className="muscle-zone-strip" aria-hidden="true">
-        {zoneSummaries.map((zone) => (
+        {visibleZoneSummaries.map((zone) => (
           <div
             className="muscle-zone-pill"
             data-active={zone.score > 0}
@@ -270,7 +273,6 @@ function ExerciseDatasetMedia({
       </div>
       <div className="dataset-media-copy">
         <strong>{exerciseName}</strong>
-        <small>Referencia visual: {media.sourceExerciseName}</small>
       </div>
       <a
         className="dataset-media-source"

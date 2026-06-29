@@ -263,8 +263,8 @@ function getExerciseType(exercise: DatasetExerciseSeed): ExerciseType {
   return "reps";
 }
 
-function getEquipmentDetail(exercise: DatasetExerciseSeed, equipment: string): string {
-  return equipment + ". Referencia del dataset: " + exercise.sourceName + ".";
+function getEquipmentDetail(_exercise: DatasetExerciseSeed, equipment: string): string {
+  return equipment;
 }
 
 function createGuide(steps: string[]): Exercise["guide"] {

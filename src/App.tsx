@@ -638,7 +638,6 @@ function ExercisesPage() {
                     <span className="exercise-card-copy">
                       <strong>{exercise.name}</strong>
                       <small>{exerciseMeta}</small>
-                      <span title={equipmentDetail}>{equipmentDetail}</span>
                     </span>
                   </button>
                 );
